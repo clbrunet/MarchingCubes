@@ -7,7 +7,8 @@ using Unity.Mathematics;
 public class Chunk : MonoBehaviour
 {
     private const uint DIMENSION = 8;
-    private const float NOISE_SCALE = 1.5f;
+    private const float NOISE_SCALE = 1f;
+    private const float NOISE_THRESHOLD = 0.7f;
 
     private void Start()
     {
@@ -22,12 +23,16 @@ public class Chunk : MonoBehaviour
             {
                 for (uint x = 0; x < DIMENSION; x++)
                 {
+                    float3 coordinate = NOISE_SCALE / (float)DIMENSION * new float3(x, y, z);
+                    float value = math.unlerp(-1f, 1f, noise.snoise(coordinate));
+                    if (value < NOISE_THRESHOLD)
+                    {
+                        continue;
+                    }
                     GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     sphere.transform.parent = transform;
                     sphere.transform.localPosition = new(x, y, z);
                     sphere.transform.localScale = 0.3f * Vector3.one;
-                    float3 point = NOISE_SCALE / (float)DIMENSION * (float3)sphere.transform.position;
-                    float value = noise.snoise(point);
                     sphere.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
                 }
             }
