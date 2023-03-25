@@ -14,18 +14,6 @@ public class CasesViewer : MonoBehaviour
         Full = 2,
     }
 
-    private static readonly Vector3Int[] CORNERS = new Vector3Int[8]
-    {
-        new Vector3Int(0, 0, 1),
-        new Vector3Int(1, 0, 1),
-        new Vector3Int(1, 0, 0),
-        new Vector3Int(0, 0, 0),
-        new Vector3Int(0, 1, 1),
-        new Vector3Int(1, 1, 1),
-        new Vector3Int(1, 1, 0),
-        new Vector3Int(0, 1, 0),
-    };
-
     private void Start()
     {
         GenerateCases();
@@ -71,7 +59,7 @@ public class CasesViewer : MonoBehaviour
                 cornerIndex--;
                 continue;
             }
-            Vector3Int corner = CORNERS[cornerIndex];
+            Vector3Int corner = LookupTables.CORNERS[cornerIndex];
             switch (verticesState[corner.z, corner.y, corner.x])
             {
                 case VertexState.Uninitialized:
@@ -104,7 +92,7 @@ public class CasesViewer : MonoBehaviour
 
     private void GenerateCaseCorners(VertexState[,,] verticesState, Transform parent)
     {
-        foreach (Vector3Int corner in CORNERS)
+        foreach (Vector3Int corner in LookupTables.CORNERS)
         {
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.parent = parent;
@@ -166,7 +154,7 @@ public class CasesViewer : MonoBehaviour
     {
         int lookupCaseIndex = 0;
         int i = 0b0000_0001;
-        foreach (Vector3Int corner in CORNERS)
+        foreach (Vector3Int corner in LookupTables.CORNERS)
         {
             if (verticesState[corner.z, corner.y, corner.x] == VertexState.Full)
             {
@@ -182,8 +170,8 @@ public class CasesViewer : MonoBehaviour
             for (int j = i; j < i + 3; j++)
             {
                 int triangleEdge = trianglesEdges[j];
-                Vector3Int cornerA = CORNERS[LookupTables.EDGE_TO_CORNER_A[triangleEdge]];
-                Vector3Int cornerB = CORNERS[LookupTables.EDGE_TO_CORNER_B[triangleEdge]];
+                Vector3Int cornerA = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_A[triangleEdge]];
+                Vector3Int cornerB = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_B[triangleEdge]];
                 Vector3 vertex = ((Vector3)(cornerA + cornerB)) / 2f;
                 vertices.Add(vertex);
             }

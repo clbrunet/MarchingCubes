@@ -1,5 +1,19 @@
+using UnityEngine;
+
 public static class LookupTables
 {
+    public static readonly Vector3Int[] CORNERS = new Vector3Int[8]
+    {
+        new Vector3Int(0, 0, 1),
+        new Vector3Int(1, 0, 1),
+        new Vector3Int(1, 0, 0),
+        new Vector3Int(0, 0, 0),
+        new Vector3Int(0, 1, 1),
+        new Vector3Int(1, 1, 1),
+        new Vector3Int(1, 1, 0),
+        new Vector3Int(0, 1, 0),
+    };
+
     // Triangulation table from http://paulbourke.net/geometry/polygonise/
     public static readonly int[][] TRIANGULATION = new int[256][] {
         new int[16] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
