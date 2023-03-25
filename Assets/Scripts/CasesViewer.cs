@@ -7,12 +7,24 @@ using System.Data;
 
 public class CasesViewer : MonoBehaviour
 {
-    enum VertexState
+    private enum VertexState
     {
         Uninitialized = 0,
         Empty = 1,
         Full = 2,
     }
+
+    private static readonly Vector3Int[] VERTICES = new Vector3Int[8]
+    {
+        new Vector3Int(0, 0, 1),
+        new Vector3Int(1, 0, 1),
+        new Vector3Int(1, 0, 0),
+        new Vector3Int(0, 0, 0),
+        new Vector3Int(0, 1, 1),
+        new Vector3Int(1, 1, 1),
+        new Vector3Int(1, 1, 0),
+        new Vector3Int(0, 1, 0),
+    };
 
     private void Start()
     {
@@ -22,15 +34,33 @@ public class CasesViewer : MonoBehaviour
     private void GenerateCases()
     {
         uint caseIndex = 0;
-        VertexState[] verticesState = new VertexState[8];
-        for (uint i = 0; i < 8; i++)
+        VertexState[,,] verticesState = new VertexState[2,2,2]
         {
-            verticesState[i] = VertexState.Empty;
-        }
+            {
+                {
+                    VertexState.Empty,
+                    VertexState.Empty,
+                },
+                {
+                    VertexState.Empty,
+                    VertexState.Empty,
+                },
+            },
+            {
+                {
+                    VertexState.Empty,
+                    VertexState.Empty,
+                },
+                {
+                    VertexState.Empty,
+                    VertexState.Empty,
+                },
+            },
+        };
         int vertexIndex = 8;
         while (true)
         {
-            if (vertexIndex == -1)
+            if (vertexIndex < 0)
             {
                 break;
             }
@@ -41,18 +71,19 @@ public class CasesViewer : MonoBehaviour
                 vertexIndex--;
                 continue;
             }
-            switch (verticesState[vertexIndex])
+            Vector3Int vertex = VERTICES[vertexIndex];
+            switch (verticesState[vertex.z, vertex.y, vertex.x])
             {
                 case VertexState.Uninitialized:
-                    verticesState[vertexIndex] = VertexState.Empty;
+                    verticesState[vertex.z, vertex.y, vertex.x] = VertexState.Empty;
                     vertexIndex++;
                     break;
                 case VertexState.Empty:
-                    verticesState[vertexIndex] = VertexState.Full;
+                    verticesState[vertex.z, vertex.y, vertex.x] = VertexState.Full;
                     vertexIndex++;
                     break;
                 case VertexState.Full:
-                    verticesState[vertexIndex] = VertexState.Uninitialized;
+                    verticesState[vertex.z, vertex.y, vertex.x] = VertexState.Uninitialized;
                     vertexIndex--;
                     break;
                 default:
@@ -61,7 +92,7 @@ public class CasesViewer : MonoBehaviour
         }
     }
 
-    private void GenerateCase(VertexState[] verticesState, uint caseIndex)
+    private void GenerateCase(VertexState[,,] verticesState, uint caseIndex)
     {
         Transform parent = new GameObject(caseIndex.ToString()).transform;
         parent.parent = transform;
@@ -69,32 +100,26 @@ public class CasesViewer : MonoBehaviour
         GenerateCaseMeshVertices(verticesState, caseIndex, parent);
     }
 
-    private void GenerateCaseCorners(VertexState[] verticesState, uint caseIndex, Transform parent)
+    private void GenerateCaseCorners(VertexState[,,] verticesState, uint caseIndex, Transform parent)
     {
-        for (uint z = 0; z < 2; z++)
+        foreach (Vector3Int vertex in VERTICES)
         {
-            for (uint y = 0; y < 2; y++)
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.parent = parent;
+            sphere.transform.localPosition = new(vertex.x + caseIndex * 3, vertex.y, vertex.z);
+            sphere.transform.localScale = 0.3f * Vector3.one;
+            if (verticesState[vertex.z, vertex.y, vertex.x] == VertexState.Full)
             {
-                for (uint x = 0; x < 2; x++)
-                {
-                    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    sphere.transform.parent = parent;
-                    sphere.transform.localPosition = new(x + caseIndex * 3, y, z);
-                    sphere.transform.localScale = 0.3f * Vector3.one;
-                    if (verticesState[z * 4 + y * 2 + x] == VertexState.Full)
-                    {
-                        sphere.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
-                    }
-                    else
-                    {
-                        sphere.GetComponent<MeshRenderer>().material.color = new Color(0f, 0f, 0f);
-                    }
-                }
+                sphere.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
+            }
+            else
+            {
+                sphere.GetComponent<MeshRenderer>().material.color = new Color(0f, 0f, 0f);
             }
         }
     }
 
-    private void GenerateCaseMeshVertices(VertexState[] verticesState, uint caseIndex, Transform parent)
+    private void GenerateCaseMeshVertices(VertexState[,,] verticesState, uint caseIndex, Transform parent)
     {
         Vector3Int[] edgeTestsStartVertices = {
             new Vector3Int(0, 0, 0),
@@ -107,21 +132,21 @@ public class CasesViewer : MonoBehaviour
             int x = edgeTestsStartVertex.x;
             int y = edgeTestsStartVertex.y;
             int z = edgeTestsStartVertex.z;
-            VertexState start = verticesState[z * 4 + y * 2 + x];
-            if ((edgeTestsStartVertex.x > 0 && start != verticesState[z * 4 + y * 2 + (x - 1)])
-                || (edgeTestsStartVertex.x < 1 && start != verticesState[z * 4 + y * 2 + (x + 1)]))
+            VertexState start = verticesState[z, y, x];
+            if ((edgeTestsStartVertex.x > 0 && start != verticesState[z, y, x - 1])
+                || (edgeTestsStartVertex.x < 1 && start != verticesState[z, y, x + 1]))
             {
                 GenerateCaseMeshVertex(new Vector3(0.5f + caseIndex * 3, y, z), parent);
             }
-            if ((edgeTestsStartVertex.y > 0 && start != verticesState[z * 4 + (y - 1) * 2 + x])
-                || (edgeTestsStartVertex.y < 1 && start != verticesState[z * 4 + (y + 1) * 2 + x]))
-            {
-                GenerateCaseMeshVertex(new Vector3(x + caseIndex * 3, 0.5f, z), parent);
-            }
-            if ((edgeTestsStartVertex.z > 0 && start != verticesState[(z - 1) * 4 + y * 2 + x])
-                || (edgeTestsStartVertex.z < 1 && start != verticesState[(z + 1) * 4 + y * 2 + x]))
+            if ((edgeTestsStartVertex.z > 0 && start != verticesState[z - 1, y, x])
+                || (edgeTestsStartVertex.z < 1 && start != verticesState[z + 1, y, x]))
             {
                 GenerateCaseMeshVertex(new Vector3(x + caseIndex * 3, y, 0.5f), parent);
+            }
+            if ((edgeTestsStartVertex.y > 0 && start != verticesState[z, y - 1, x])
+                || (edgeTestsStartVertex.y < 1 && start != verticesState[z, y + 1, x]))
+            {
+                GenerateCaseMeshVertex(new Vector3(x + caseIndex * 3, 0.5f, z), parent);
             }
         }
     }

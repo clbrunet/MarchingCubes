@@ -8,7 +8,7 @@ public class Chunk : MonoBehaviour
 {
     private const uint DIMENSION = 8;
     private const float NOISE_SCALE = 1f;
-    private const float NOISE_THRESHOLD = 0.7f;
+    private const float ISOSURFACE_THRESHOLD = 0.7f;
 
     private readonly float[,,] noiseValues = new float[DIMENSION, DIMENSION, DIMENSION];
 
@@ -49,7 +49,7 @@ public class Chunk : MonoBehaviour
                 for (uint x = 0; x < DIMENSION; x++)
                 {
                     float value = noiseValues[z, y, x];
-                    if (value < NOISE_THRESHOLD)
+                    if (value < ISOSURFACE_THRESHOLD)
                     {
                         continue;
                     }
