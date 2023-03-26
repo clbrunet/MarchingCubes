@@ -17,8 +17,11 @@ public class Chunk : MonoBehaviour
     }
 
     [SerializeField]
+    [Range(0f, 64f)]
+    private float sideSize = 16f;
+    [SerializeField]
     [Range(2, 64)]
-    private uint dimension = 16;
+    private uint sideDimension = 16;
     [SerializeField]
     private float noiseScale = 1f;
     [SerializeField]
@@ -58,14 +61,14 @@ public class Chunk : MonoBehaviour
 
     private void GenerateNoiseValues()
     {
-        noiseValues = new float[dimension, dimension, dimension];
-        for (uint z = 0; z < dimension; z++)
+        noiseValues = new float[sideDimension, sideDimension, sideDimension];
+        for (uint z = 0; z < sideDimension; z++)
         {
-            for (uint y = 0; y < dimension; y++)
+            for (uint y = 0; y < sideDimension; y++)
             {
-                for (uint x = 0; x < dimension; x++)
+                for (uint x = 0; x < sideDimension; x++)
                 {
-                    float3 coordinate = noiseScale / (float)dimension * new float3(x, y, z);
+                    float3 coordinate = noiseScale / (float)sideDimension * new float3(x, y, z);
                     float value = math.unlerp(-1f, 1f, noise.snoise(coordinate));
                     noiseValues[z, y, x] = value;
                 }
@@ -82,11 +85,11 @@ public class Chunk : MonoBehaviour
         Transform corners = new GameObject("Corners").transform;
         corners.parent = transform;
         corners.localPosition = Vector3.zero;
-        for (uint z = 0; z < dimension; z++)
+        for (uint z = 0; z < sideDimension; z++)
         {
-            for (uint y = 0; y < dimension; y++)
+            for (uint y = 0; y < sideDimension; y++)
             {
-                for (uint x = 0; x < dimension; x++)
+                for (uint x = 0; x < sideDimension; x++)
                 {
                     float value = noiseValues[z, y, x];
                     if ((cornersGeneration == CornersGeneration.In && value < isosurfaceThreshold)
@@ -96,7 +99,7 @@ public class Chunk : MonoBehaviour
                     }
                     GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     cube.transform.parent = corners;
-                    cube.transform.localPosition = new(x, y, z);
+                    cube.transform.localPosition = sideSize / (float)sideDimension * new Vector3(x, y, z);
                     cube.transform.localScale = 0.2f * Vector3.one;
                     cube.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
                 }
@@ -108,11 +111,11 @@ public class Chunk : MonoBehaviour
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
-        for (int z = 0; z < dimension - 1; z++)
+        for (int z = 0; z < sideDimension - 1; z++)
         {
-            for (int y = 0; y < dimension - 1; y++)
+            for (int y = 0; y < sideDimension - 1; y++)
             {
-                for (int x = 0; x < dimension - 1; x++)
+                for (int x = 0; x < sideDimension - 1; x++)
                 {
                     GenerateMeshCube(new Vector3Int(x, y, z), vertices, triangles);
                 }
@@ -149,7 +152,8 @@ public class Chunk : MonoBehaviour
                 int triangleEdge = trianglesEdges[j];
                 Vector3Int cornerA = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_A[triangleEdge]];
                 Vector3Int cornerB = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_B[triangleEdge]];
-                Vector3 vertex = ((Vector3)(cornerA + cornerB)) / 2f + frontBottomLeft;
+                Vector3 vertex = sideSize / (float)sideDimension
+                    * ((Vector3)(cornerA + cornerB) / 2f + frontBottomLeft);
                 vertices.Add(vertex);
             }
             triangles.Add(previousTrianglesCount + i + 2);
