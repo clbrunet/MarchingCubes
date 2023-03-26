@@ -32,11 +32,16 @@ public class Chunk : MonoBehaviour
 
     private void Start()
     {
-        Generate();
+        Regenerate();
     }
 
-    private void Generate()
+    public void Regenerate()
     {
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+
         GenerateNoiseValues();
         if (cornersGeneration != CornersGeneration.None)
         {
@@ -67,6 +72,9 @@ public class Chunk : MonoBehaviour
         {
             return;
         }
+        Transform corners = new GameObject("Corners").transform;
+        corners.parent = transform;
+        corners.localPosition = Vector3.zero;
         for (uint z = 0; z < DIMENSION; z++)
         {
             for (uint y = 0; y < DIMENSION; y++)
@@ -80,7 +88,7 @@ public class Chunk : MonoBehaviour
                         continue;
                     }
                     GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    cube.transform.parent = transform;
+                    cube.transform.parent = corners;
                     cube.transform.localPosition = new(x, y, z);
                     cube.transform.localScale = 0.2f * Vector3.one;
                     cube.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
