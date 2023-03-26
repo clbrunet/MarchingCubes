@@ -46,6 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4635092389a12404ab4319b959358428, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dimension: 16
+  noiseScale: 1
+  isosurfaceThreshold: 0.7
   cornersGeneration: 0
 --- !u!33 &1377341320950730723
 MeshFilter:

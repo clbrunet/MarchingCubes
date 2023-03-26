@@ -16,14 +16,20 @@ public class Chunk : MonoBehaviour
         All,
     }
 
-    private const uint DIMENSION = 8;
-    private const float NOISE_SCALE = 1f;
-    private const float ISOSURFACE_THRESHOLD = 0.7f;
-    [SerializeField] private CornersGeneration cornersGeneration;
+    [SerializeField]
+    [Range(2, 64)]
+    private uint dimension = 16;
+    [SerializeField]
+    private float noiseScale = 1f;
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
+    private float isosurfaceThreshold = 0.7f;
+    [SerializeField]
+    private CornersGeneration cornersGeneration;
 
     private MeshFilter meshFilter;
 
-    private readonly float[,,] noiseValues = new float[DIMENSION, DIMENSION, DIMENSION];
+    private float[,,] noiseValues;
 
     private void Awake()
     {
@@ -52,13 +58,14 @@ public class Chunk : MonoBehaviour
 
     private void GenerateNoiseValues()
     {
-        for (uint z = 0; z < DIMENSION; z++)
+        noiseValues = new float[dimension, dimension, dimension];
+        for (uint z = 0; z < dimension; z++)
         {
-            for (uint y = 0; y < DIMENSION; y++)
+            for (uint y = 0; y < dimension; y++)
             {
-                for (uint x = 0; x < DIMENSION; x++)
+                for (uint x = 0; x < dimension; x++)
                 {
-                    float3 coordinate = NOISE_SCALE / (float)DIMENSION * new float3(x, y, z);
+                    float3 coordinate = noiseScale / (float)dimension * new float3(x, y, z);
                     float value = math.unlerp(-1f, 1f, noise.snoise(coordinate));
                     noiseValues[z, y, x] = value;
                 }
@@ -75,15 +82,15 @@ public class Chunk : MonoBehaviour
         Transform corners = new GameObject("Corners").transform;
         corners.parent = transform;
         corners.localPosition = Vector3.zero;
-        for (uint z = 0; z < DIMENSION; z++)
+        for (uint z = 0; z < dimension; z++)
         {
-            for (uint y = 0; y < DIMENSION; y++)
+            for (uint y = 0; y < dimension; y++)
             {
-                for (uint x = 0; x < DIMENSION; x++)
+                for (uint x = 0; x < dimension; x++)
                 {
                     float value = noiseValues[z, y, x];
-                    if ((cornersGeneration == CornersGeneration.In && value < ISOSURFACE_THRESHOLD)
-                        || (cornersGeneration == CornersGeneration.Out && ISOSURFACE_THRESHOLD <= value))
+                    if ((cornersGeneration == CornersGeneration.In && value < isosurfaceThreshold)
+                        || (cornersGeneration == CornersGeneration.Out && isosurfaceThreshold <= value))
                     {
                         continue;
                     }
@@ -101,11 +108,11 @@ public class Chunk : MonoBehaviour
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
-        for (int z = 0; z < DIMENSION - 1; z++)
+        for (int z = 0; z < dimension - 1; z++)
         {
-            for (int y = 0; y < DIMENSION - 1; y++)
+            for (int y = 0; y < dimension - 1; y++)
             {
-                for (int x = 0; x < DIMENSION - 1; x++)
+                for (int x = 0; x < dimension - 1; x++)
                 {
                     GenerateMeshCube(new Vector3Int(x, y, z), vertices, triangles);
                 }
@@ -127,7 +134,7 @@ public class Chunk : MonoBehaviour
         foreach (Vector3Int corner in LookupTables.CORNERS)
         {
             if (noiseValues[frontBottomLeft.z + corner.z, frontBottomLeft.y + corner.y,
-                frontBottomLeft.x + corner.x] >= ISOSURFACE_THRESHOLD)
+                frontBottomLeft.x + corner.x] >= isosurfaceThreshold)
             {
                 lookupCaseIndex |= i;
             }
