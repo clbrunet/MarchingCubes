@@ -8,9 +8,18 @@ using System;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
+    private enum CornersGeneration
+    {
+        None,
+        In,
+        Out,
+        All,
+    }
+
     private const uint DIMENSION = 8;
     private const float NOISE_SCALE = 1f;
     private const float ISOSURFACE_THRESHOLD = 0.7f;
+    [SerializeField] private CornersGeneration cornersGeneration;
 
     private MeshFilter meshFilter;
 
@@ -29,7 +38,10 @@ public class Chunk : MonoBehaviour
     private void Generate()
     {
         GenerateNoiseValues();
-        GenerateSpheres();
+        if (cornersGeneration != CornersGeneration.None)
+        {
+            GenerateCorners();
+        }
         GenerateMesh();
     }
 
@@ -49,8 +61,12 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    private void GenerateSpheres()
+    private void GenerateCorners()
     {
+        if (cornersGeneration == CornersGeneration.None)
+        {
+            return;
+        }
         for (uint z = 0; z < DIMENSION; z++)
         {
             for (uint y = 0; y < DIMENSION; y++)
@@ -58,15 +74,16 @@ public class Chunk : MonoBehaviour
                 for (uint x = 0; x < DIMENSION; x++)
                 {
                     float value = noiseValues[z, y, x];
-                    if (value < ISOSURFACE_THRESHOLD)
+                    if ((cornersGeneration == CornersGeneration.In && value < ISOSURFACE_THRESHOLD)
+                        || (cornersGeneration == CornersGeneration.Out && ISOSURFACE_THRESHOLD <= value))
                     {
                         continue;
                     }
-                    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    sphere.transform.parent = transform;
-                    sphere.transform.localPosition = new(x, y, z);
-                    sphere.transform.localScale = 0.3f * Vector3.one;
-                    sphere.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
+                    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    cube.transform.parent = transform;
+                    cube.transform.localPosition = new(x, y, z);
+                    cube.transform.localScale = 0.2f * Vector3.one;
+                    cube.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
                 }
             }
         }
