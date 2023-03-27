@@ -272,6 +272,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c09a7b75fdd7b84aa018fff148b1de5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  speed: 8
+  sensitivity: 8
+  pitchMin: -89
+  pitchMax: 89
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
