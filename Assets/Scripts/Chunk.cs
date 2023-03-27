@@ -16,6 +16,18 @@ public class Chunk : MonoBehaviour
         All,
     }
 
+    private struct CornerBatch
+    {
+        public List<Matrix4x4> matrices;
+        public MaterialPropertyBlock properties;
+
+        public CornerBatch(List<Matrix4x4> matrices, MaterialPropertyBlock properties)
+        {
+            this.matrices = matrices;
+            this.properties = properties;
+        }
+    }
+
     [SerializeField]
     [Range(0f, 64f)]
     private float sideSize = 16f;
@@ -37,8 +49,7 @@ public class Chunk : MonoBehaviour
     private MeshFilter meshFilter;
 
     private float[,,] noiseValues;
-    private List<List<Matrix4x4>> cornerMatricesBatches = null;
-    private List<MaterialPropertyBlock> cornerPropertiesBatches = null;
+    private List<CornerBatch> cornerBatches = null;
 
     private void Awake()
     {
@@ -57,17 +68,15 @@ public class Chunk : MonoBehaviour
 
     private void DrawCorners()
     {
-        if (cornerMatricesBatches == null)
+        if (cornerBatches == null)
         {
             return;
         }
-        for (int i = 0; i < cornerMatricesBatches.Count; i++)
+        foreach (CornerBatch cornerBatch in cornerBatches)
         {
-            List<Matrix4x4> cornerMatricesBatch = cornerMatricesBatches[i];
-            MaterialPropertyBlock cornerPropertiesBatch = cornerPropertiesBatches[i];
-            for (int j = 0; j < cornerMesh.subMeshCount; j++)
+            for (int i = 0; i < cornerMesh.subMeshCount; i++)
             {
-                Graphics.DrawMeshInstanced(cornerMesh, j, cornerMaterial, cornerMatricesBatch, cornerPropertiesBatch);
+                Graphics.DrawMeshInstanced(cornerMesh, i, cornerMaterial, cornerBatch.matrices, cornerBatch.properties);
             }
         }
     }
@@ -100,8 +109,7 @@ public class Chunk : MonoBehaviour
     {
         if (cornersGeneration == CornersGeneration.None)
         {
-            cornerMatricesBatches = null;
-            cornerPropertiesBatches = null;
+            cornerBatches = null;
             return;
         }
         int maxCornersCount = (int)(sideDimension * sideDimension * sideDimension);
@@ -111,9 +119,9 @@ public class Chunk : MonoBehaviour
         {
             batchesCount++;
         }
-        cornerMatricesBatches = new List<List<Matrix4x4>>(batchesCount);
-        cornerPropertiesBatches = new List<MaterialPropertyBlock>(batchesCount);
+        cornerBatches = new List<CornerBatch>(batchesCount);
         List<Vector4> colors = null;
+        int colorPropertyId = Shader.PropertyToID("_BaseColor");
         int batch = 0;
         for (uint z = 0; z < sideDimension; z++)
         {
@@ -127,29 +135,25 @@ public class Chunk : MonoBehaviour
                     {
                         continue;
                     }
-                    if (batch == cornerMatricesBatches.Count)
+                    if (batch == cornerBatches.Count)
                     {
-                        cornerMatricesBatches.Add(new List<Matrix4x4>(INSTANCES_COUNT_LIMIT));
-                        if (cornerPropertiesBatches.Count > 0)
-                        {
-                            cornerPropertiesBatches[^1]
-                                .SetVectorArray("_BaseColor", colors);
-                        }
-                        cornerPropertiesBatches.Add(new MaterialPropertyBlock());
+                        cornerBatches.Add(new CornerBatch(new List<Matrix4x4>(INSTANCES_COUNT_LIMIT),
+                            new MaterialPropertyBlock()));
                         colors = new List<Vector4>(INSTANCES_COUNT_LIMIT);
                     }
                     Vector3 localPosition = sideSize / (float)sideDimension * new Vector3(x, y, z);
-                    cornerMatricesBatches[batch].Add(Matrix4x4.TRS(transform.position + localPosition,
+                    cornerBatches[batch].matrices.Add(Matrix4x4.TRS(transform.position + localPosition,
                         Quaternion.identity, new Vector3(0.2f, 0.2f, 0.2f)));
                     colors.Add(new Vector4(value, value, value, 1f));
-                    if (cornerMatricesBatches[batch].Count == INSTANCES_COUNT_LIMIT)
+                    if (colors.Count == INSTANCES_COUNT_LIMIT)
                     {
+                        cornerBatches[batch].properties.SetVectorArray(colorPropertyId, colors);
                         batch++;
                     }
                 }
             }
         }
-        cornerPropertiesBatches[^1].SetVectorArray("_BaseColor", colors);
+        cornerBatches[^1].properties.SetVectorArray(colorPropertyId, colors);
     }
 
     private void GenerateMesh()
