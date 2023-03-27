@@ -46,10 +46,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4635092389a12404ab4319b959358428, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dimension: 16
+  sideSize: 16
+  sideDimension: 16
   noiseScale: 1
   isosurfaceThreshold: 0.7
   cornersGeneration: 0
+  cornerMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  cornerMaterial: {fileID: 2100000, guid: 5337a6615e481c14a9a6061bd535f2cd, type: 2}
 --- !u!33 &1377341320950730723
 MeshFilter:
   m_ObjectHideFlags: 0

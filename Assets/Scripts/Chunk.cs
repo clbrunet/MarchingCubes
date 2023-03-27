@@ -29,10 +29,16 @@ public class Chunk : MonoBehaviour
     private float isosurfaceThreshold = 0.7f;
     [SerializeField]
     private CornersGeneration cornersGeneration;
+    [SerializeField]
+    private Mesh cornerMesh;
+    [SerializeField]
+    private Material cornerMaterial;
 
     private MeshFilter meshFilter;
 
     private float[,,] noiseValues;
+    private List<List<Matrix4x4>> cornerMatricesBatches = null;
+    private List<MaterialPropertyBlock> cornerPropertiesBatches = null;
 
     private void Awake()
     {
@@ -44,18 +50,32 @@ public class Chunk : MonoBehaviour
         Regenerate();
     }
 
+    private void Update()
+    {
+        DrawCorners();
+    }
+
+    private void DrawCorners()
+    {
+        if (cornerMatricesBatches == null)
+        {
+            return;
+        }
+        for (int i = 0; i < cornerMatricesBatches.Count; i++)
+        {
+            List<Matrix4x4> cornerMatricesBatch = cornerMatricesBatches[i];
+            MaterialPropertyBlock cornerPropertiesBatch = cornerPropertiesBatches[i];
+            for (int j = 0; j < cornerMesh.subMeshCount; j++)
+            {
+                Graphics.DrawMeshInstanced(cornerMesh, j, cornerMaterial, cornerMatricesBatch, cornerPropertiesBatch);
+            }
+        }
+    }
+
     public void Regenerate()
     {
-        foreach (Transform child in transform)
-        {
-            Destroy(child.gameObject);
-        }
-
         GenerateNoiseValues();
-        if (cornersGeneration != CornersGeneration.None)
-        {
-            GenerateCorners();
-        }
+        GenerateCorners();
         GenerateMesh();
     }
 
@@ -80,11 +100,21 @@ public class Chunk : MonoBehaviour
     {
         if (cornersGeneration == CornersGeneration.None)
         {
+            cornerMatricesBatches = null;
+            cornerPropertiesBatches = null;
             return;
         }
-        Transform corners = new GameObject("Corners").transform;
-        corners.parent = transform;
-        corners.localPosition = Vector3.zero;
+        int maxCornersCount = (int)(sideDimension * sideDimension * sideDimension);
+        const int INSTANCES_COUNT_LIMIT = 1020;
+        int batchesCount = maxCornersCount / INSTANCES_COUNT_LIMIT;
+        if (maxCornersCount % INSTANCES_COUNT_LIMIT != 0)
+        {
+            batchesCount++;
+        }
+        cornerMatricesBatches = new List<List<Matrix4x4>>(batchesCount);
+        cornerPropertiesBatches = new List<MaterialPropertyBlock>(batchesCount);
+        List<Vector4> colors = null;
+        int batch = 0;
         for (uint z = 0; z < sideDimension; z++)
         {
             for (uint y = 0; y < sideDimension; y++)
@@ -97,14 +127,29 @@ public class Chunk : MonoBehaviour
                     {
                         continue;
                     }
-                    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    cube.transform.parent = corners;
-                    cube.transform.localPosition = sideSize / (float)sideDimension * new Vector3(x, y, z);
-                    cube.transform.localScale = 0.2f * Vector3.one;
-                    cube.GetComponent<MeshRenderer>().material.color = new Color(value, value, value);
+                    if (batch == cornerMatricesBatches.Count)
+                    {
+                        cornerMatricesBatches.Add(new List<Matrix4x4>(INSTANCES_COUNT_LIMIT));
+                        if (cornerPropertiesBatches.Count > 0)
+                        {
+                            cornerPropertiesBatches[^1]
+                                .SetVectorArray("_BaseColor", colors);
+                        }
+                        cornerPropertiesBatches.Add(new MaterialPropertyBlock());
+                        colors = new List<Vector4>(INSTANCES_COUNT_LIMIT);
+                    }
+                    Vector3 localPosition = sideSize / (float)sideDimension * new Vector3(x, y, z);
+                    cornerMatricesBatches[batch].Add(Matrix4x4.TRS(transform.position + localPosition,
+                        Quaternion.identity, new Vector3(0.2f, 0.2f, 0.2f)));
+                    colors.Add(new Vector4(value, value, value, 1f));
+                    if (cornerMatricesBatches[batch].Count == INSTANCES_COUNT_LIMIT)
+                    {
+                        batch++;
+                    }
                 }
             }
         }
+        cornerPropertiesBatches[^1].SetVectorArray("_BaseColor", colors);
     }
 
     private void GenerateMesh()
