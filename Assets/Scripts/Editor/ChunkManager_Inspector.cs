@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(Chunk))]
-public class Chunk_Inspector : Editor
+[CustomEditor(typeof(ChunkManager))]
+public class ChunkManager_Inspector : Editor
 {
     public override void OnInspectorGUI()
     {
@@ -13,7 +13,7 @@ public class Chunk_Inspector : Editor
         {
             if (GUILayout.Button("Regenerate"))
             {
-                (target as Chunk).Regenerate();
+                (target as ChunkManager).Regenerate();
             }
         }
     }
