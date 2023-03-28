@@ -66,14 +66,15 @@ public class Chunk : MonoBehaviour
 
     private void GenerateNoiseValues()
     {
-        noiseValues = new float[manager.sideDimension, manager.sideDimension, manager.sideDimension];
-        for (uint z = 0; z < manager.sideDimension; z++)
+        noiseValues = new float[manager.sideSegmentCount + 1, manager.sideSegmentCount + 1, manager.sideSegmentCount + 1];
+        for (uint z = 0; z < manager.sideSegmentCount + 1; z++)
         {
-            for (uint y = 0; y < manager.sideDimension; y++)
+            for (uint y = 0; y < manager.sideSegmentCount + 1; y++)
             {
-                for (uint x = 0; x < manager.sideDimension; x++)
+                for (uint x = 0; x < manager.sideSegmentCount + 1; x++)
                 {
-                    float3 coordinate = manager.noiseScale / (float)manager.sideDimension * new float3(x, y, z);
+                    float3 coordinate = manager.noiseScale / (float)manager.sideSegmentCount * new float3(x, y, z)
+                        + (float3)transform.position / manager.sideSize;
                     float value = math.unlerp(-1f, 1f, noise.snoise(coordinate));
                     noiseValues[z, y, x] = value;
                 }
@@ -88,7 +89,7 @@ public class Chunk : MonoBehaviour
             cornerBatches = null;
             return;
         }
-        int maxCornersCount = (int)(manager.sideDimension * manager.sideDimension * manager.sideDimension);
+        int maxCornersCount = (int)(manager.sideSegmentCount + 1 * manager.sideSegmentCount + 1 * manager.sideSegmentCount + 1);
         const int INSTANCES_COUNT_LIMIT = 1020;
         int batchesCount = maxCornersCount / INSTANCES_COUNT_LIMIT;
         if (maxCornersCount % INSTANCES_COUNT_LIMIT != 0)
@@ -99,11 +100,11 @@ public class Chunk : MonoBehaviour
         List<Vector4> colors = null;
         int colorPropertyId = Shader.PropertyToID("_BaseColor");
         int batch = 0;
-        for (uint z = 0; z < manager.sideDimension; z++)
+        for (uint z = 0; z < manager.sideSegmentCount + 1; z++)
         {
-            for (uint y = 0; y < manager.sideDimension; y++)
+            for (uint y = 0; y < manager.sideSegmentCount + 1; y++)
             {
-                for (uint x = 0; x < manager.sideDimension; x++)
+                for (uint x = 0; x < manager.sideSegmentCount + 1; x++)
                 {
                     float value = noiseValues[z, y, x];
                     if ((manager.cornersGeneration == CornersGeneration.In && value < manager.isosurfaceThreshold)
@@ -117,7 +118,7 @@ public class Chunk : MonoBehaviour
                             new MaterialPropertyBlock()));
                         colors = new List<Vector4>(INSTANCES_COUNT_LIMIT);
                     }
-                    Vector3 localPosition = manager.sideSize / (float)manager.sideDimension * new Vector3(x, y, z);
+                    Vector3 localPosition = manager.sideSize / (float)manager.sideSegmentCount * new Vector3(x, y, z);
                     cornerBatches[batch].matrices.Add(Matrix4x4.TRS(transform.position + localPosition,
                         Quaternion.identity, new Vector3(0.2f, 0.2f, 0.2f)));
                     colors.Add(new Vector4(value, value, value, 1f));
@@ -136,11 +137,11 @@ public class Chunk : MonoBehaviour
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
-        for (int z = 0; z < manager.sideDimension - 1; z++)
+        for (int z = 0; z < manager.sideSegmentCount; z++)
         {
-            for (int y = 0; y < manager.sideDimension - 1; y++)
+            for (int y = 0; y < manager.sideSegmentCount; y++)
             {
-                for (int x = 0; x < manager.sideDimension - 1; x++)
+                for (int x = 0; x < manager.sideSegmentCount; x++)
                 {
                     GenerateMeshCube(new Vector3Int(x, y, z), vertices, triangles);
                 }
@@ -177,7 +178,7 @@ public class Chunk : MonoBehaviour
                 int triangleEdge = trianglesEdges[j];
                 Vector3Int cornerA = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_A[triangleEdge]];
                 Vector3Int cornerB = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_B[triangleEdge]];
-                Vector3 vertex = manager.sideSize / (float)manager.sideDimension
+                Vector3 vertex = manager.sideSize / (float)manager.sideSegmentCount
                     * ((Vector3)(cornerA + cornerB) / 2f + frontBottomLeft);
                 vertices.Add(vertex);
             }

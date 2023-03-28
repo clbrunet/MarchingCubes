@@ -156,7 +156,7 @@ MonoBehaviour:
   chunkPrefab: {fileID: 6384766017849542809, guid: dff74f9d01c25c345819ac4d63936588,
     type: 3}
   sideSize: 16
-  sideDimension: 16
+  sideSegmentCount: 16
   noiseScale: 1
   isosurfaceThreshold: 0.7
   cornersGeneration: 0
@@ -264,7 +264,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
