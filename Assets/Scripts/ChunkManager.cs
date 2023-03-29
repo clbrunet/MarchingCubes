@@ -41,18 +41,18 @@ public class ChunkManager : MonoBehaviour
     private void Start()
     {
         AddChunk(new Vector3(0f, 0f, 0f));
-        AddChunk(new Vector3(0f, -sideSize, 0f));
-        AddChunk(new Vector3(-sideSize, -sideSize, 0f));
-        AddChunk(new Vector3(-sideSize, 0f, 0f));
-        AddChunk(new Vector3(0f, 0f, -sideSize));
-        AddChunk(new Vector3(0f, -sideSize, -sideSize));
-        AddChunk(new Vector3(-sideSize, -sideSize, -sideSize));
-        AddChunk(new Vector3(-sideSize, 0f, -sideSize));
+        AddChunk(new Vector3(0f, -1, 0f));
+        AddChunk(new Vector3(-1, -1, 0f));
+        AddChunk(new Vector3(-1, 0f, 0f));
+        AddChunk(new Vector3(0f, 0f, -1));
+        AddChunk(new Vector3(0f, -1, -1));
+        AddChunk(new Vector3(-1, -1, -1));
+        AddChunk(new Vector3(-1, 0f, -1));
     }
 
-    private void AddChunk(Vector3 position)
+    private void AddChunk(Vector3 coordinate)
     {
-        chunks.Add(Instantiate(chunkPrefab, position, Quaternion.identity, chunksParent));
+        chunks.Add(Instantiate(chunkPrefab, coordinate * sideSize, Quaternion.identity, chunksParent));
     }
 
     public void Regenerate()
