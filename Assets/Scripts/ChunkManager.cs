@@ -56,9 +56,6 @@ public class ChunkManager : MonoBehaviour
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
         Vector3Int backTopRight = new Vector3Int(cameraChunkCoordinate.x + radius,
             cameraChunkCoordinate.y + radius, cameraChunkCoordinate.z + radius);
-        print(cameraChunkCoordinate);
-        print(frontBottomLeft);
-        print(backTopRight);
         for (int z = frontBottomLeft.z; z < backTopRight.z; z++)
         {
             for (int y = frontBottomLeft.y; y < backTopRight.y; y++)
