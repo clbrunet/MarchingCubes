@@ -16,6 +16,9 @@ public class ChunkManager : MonoBehaviour
     public static ChunkManager Instance { get; private set; }
 
     [SerializeField]
+    [Range(1, 20)]
+    private int chunkViewDistance = 4;
+    [SerializeField]
     private Transform chunksParent;
     [SerializeField]
     private Chunk chunkPrefab;
@@ -30,29 +33,47 @@ public class ChunkManager : MonoBehaviour
     public Mesh cornerMesh;
     public Material cornerMaterial;
 
+    public new Camera camera;
     private readonly List<Chunk> chunks = new();
 
     private void Awake()
     {
         Assert.IsNull(Instance);
         Instance = this;
+        camera = Camera.main;
     }
 
     private void Start()
     {
-        AddChunk(new Vector3(0f, 0f, 0f));
-        AddChunk(new Vector3(0f, -1, 0f));
-        AddChunk(new Vector3(-1, -1, 0f));
-        AddChunk(new Vector3(-1, 0f, 0f));
-        AddChunk(new Vector3(0f, 0f, -1));
-        AddChunk(new Vector3(0f, -1, -1));
-        AddChunk(new Vector3(-1, -1, -1));
-        AddChunk(new Vector3(-1, 0f, -1));
+        LoadChunks();
     }
 
-    private void AddChunk(Vector3 coordinate)
+    private void LoadChunks()
     {
-        chunks.Add(Instantiate(chunkPrefab, coordinate * sideSize, Quaternion.identity, chunksParent));
+        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / sideSize);
+        int radius = chunkViewDistance / 2;
+        Vector3Int frontBottomLeft = new Vector3Int(cameraChunkCoordinate.x - radius,
+            cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
+        Vector3Int backTopRight = new Vector3Int(cameraChunkCoordinate.x + radius,
+            cameraChunkCoordinate.y + radius, cameraChunkCoordinate.z + radius);
+        print(cameraChunkCoordinate);
+        print(frontBottomLeft);
+        print(backTopRight);
+        for (int z = frontBottomLeft.z; z < backTopRight.z; z++)
+        {
+            for (int y = frontBottomLeft.y; y < backTopRight.y; y++)
+            {
+                for (int x = frontBottomLeft.x; x < backTopRight.x; x++)
+                {
+                    AddChunk(new Vector3Int(x, y, z));
+                }
+            }
+        }
+    }
+
+    private void AddChunk(Vector3Int coordinate)
+    {
+        chunks.Add(Instantiate(chunkPrefab, (Vector3)coordinate * sideSize, Quaternion.identity, chunksParent));
     }
 
     public void Regenerate()
