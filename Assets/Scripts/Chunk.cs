@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using Unity.Mathematics;
 using System;
 using System.Threading.Tasks;
@@ -45,6 +44,10 @@ public class Chunk : MonoBehaviour
             RegenerateNoiseValues();
             return RegenerateMeshData();
         });
+        if (this == null)
+        {
+            return;
+        }
         ApplyGenerationData(meshData);
     }
 

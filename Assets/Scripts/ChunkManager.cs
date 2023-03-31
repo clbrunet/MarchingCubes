@@ -22,7 +22,7 @@ public class ChunkManager : MonoBehaviour
     [Range(0.0f, 1.0f)]
     public float isosurfaceThreshold = 0.7f;
 
-    public new Camera camera;
+    private new Camera camera;
     private readonly Dictionary<Vector3Int, Chunk> chunks = new();
 
     private void Awake()

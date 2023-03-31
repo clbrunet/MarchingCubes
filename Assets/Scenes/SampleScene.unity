@@ -160,7 +160,6 @@ MonoBehaviour:
   sideSegmentCount: 16
   noiseScale: 1
   isosurfaceThreshold: 0.7
-  camera: {fileID: 0}
 --- !u!4 &93740712
 Transform:
   m_ObjectHideFlags: 0
