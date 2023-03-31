@@ -60,11 +60,11 @@ public class ChunkManager : MonoBehaviour
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
         Vector3Int backTopRight = new(cameraChunkCoordinate.x + radius,
             cameraChunkCoordinate.y + radius, cameraChunkCoordinate.z + radius);
-        for (int z = frontBottomLeft.z; z < backTopRight.z; z++)
+        for (int z = frontBottomLeft.z; z <= backTopRight.z; z++)
         {
-            for (int y = frontBottomLeft.y; y < backTopRight.y; y++)
+            for (int y = frontBottomLeft.y; y <= backTopRight.y; y++)
             {
-                for (int x = frontBottomLeft.x; x < backTopRight.x; x++)
+                for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
                 {
                     TryAddChunk(new Vector3Int(x, y, z));
                 }
