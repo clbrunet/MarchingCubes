@@ -3,14 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public enum CornersGeneration
-{
-    None,
-    In,
-    Out,
-    All,
-}
-
 public class ChunkManager : MonoBehaviour
 {
     public static ChunkManager Instance { get; private set; }
@@ -29,9 +21,6 @@ public class ChunkManager : MonoBehaviour
     public float noiseScale = 1f;
     [Range(0.0f, 1.0f)]
     public float isosurfaceThreshold = 0.7f;
-    public CornersGeneration cornersGeneration;
-    public Mesh cornerMesh;
-    public Material cornerMaterial;
 
     public new Camera camera;
     private readonly List<Chunk> chunks = new();
