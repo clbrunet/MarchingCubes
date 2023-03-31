@@ -11,9 +11,9 @@ public class ChunkManager_Inspector : Editor
         DrawDefaultInspector();
         if (EditorApplication.isPlaying)
         {
-            if (GUILayout.Button("Regenerate"))
+            if (GUILayout.Button("Reload chunks"))
             {
-                (target as ChunkManager).RegenerateAsync();
+                (target as ChunkManager).ReloadChunks();
             }
         }
     }

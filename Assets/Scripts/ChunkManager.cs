@@ -23,7 +23,7 @@ public class ChunkManager : MonoBehaviour
     public float isosurfaceThreshold = 0.7f;
 
     public new Camera camera;
-    private readonly List<Chunk> chunks = new();
+    private readonly Dictionary<Vector3Int, Chunk> chunks = new();
 
     private void Awake()
     {
@@ -35,6 +35,21 @@ public class ChunkManager : MonoBehaviour
     private void Start()
     {
         LoadChunks();
+    }
+
+    public void ReloadChunks()
+    {
+        DestroyChunks();
+        LoadChunks();
+    }
+
+    private void DestroyChunks()
+    {
+        foreach (Chunk chunk in chunks.Values)
+        {
+            Destroy(chunk.gameObject);
+        }
+        chunks.Clear();
     }
 
     private void LoadChunks()
@@ -51,22 +66,20 @@ public class ChunkManager : MonoBehaviour
             {
                 for (int x = frontBottomLeft.x; x < backTopRight.x; x++)
                 {
-                    AddChunk(new Vector3Int(x, y, z));
+                    TryAddChunk(new Vector3Int(x, y, z));
                 }
             }
         }
     }
 
-    private void AddChunk(Vector3Int coordinate)
+    private bool TryAddChunk(Vector3Int coordinate)
     {
-        chunks.Add(Instantiate(chunkPrefab, (Vector3)coordinate * sideSize, Quaternion.identity, chunksParent));
-    }
-
-    public void RegenerateAsync()
-    {
-        foreach (Chunk chunk in chunks)
+        if (chunks.ContainsKey(coordinate))
         {
-            chunk.RegenerateAsync();
+            return false;
         }
+        chunks.Add(coordinate,
+            Instantiate(chunkPrefab, (Vector3)coordinate * sideSize, Quaternion.identity, chunksParent));
+        return true;
     }
 }
