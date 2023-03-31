@@ -13,7 +13,7 @@ public class ChunkManager_Inspector : Editor
         {
             if (GUILayout.Button("Regenerate"))
             {
-                (target as ChunkManager).Regenerate();
+                (target as ChunkManager).RegenerateAsync();
             }
         }
     }

@@ -52,9 +52,9 @@ public class ChunkManager : MonoBehaviour
     {
         Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / sideSize);
         int radius = chunkViewDistance / 2;
-        Vector3Int frontBottomLeft = new Vector3Int(cameraChunkCoordinate.x - radius,
+        Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
-        Vector3Int backTopRight = new Vector3Int(cameraChunkCoordinate.x + radius,
+        Vector3Int backTopRight = new(cameraChunkCoordinate.x + radius,
             cameraChunkCoordinate.y + radius, cameraChunkCoordinate.z + radius);
         for (int z = frontBottomLeft.z; z < backTopRight.z; z++)
         {
@@ -73,11 +73,11 @@ public class ChunkManager : MonoBehaviour
         chunks.Add(Instantiate(chunkPrefab, (Vector3)coordinate * sideSize, Quaternion.identity, chunksParent));
     }
 
-    public void Regenerate()
+    public void RegenerateAsync()
     {
         foreach (Chunk chunk in chunks)
         {
-            chunk.Regenerate();
+            chunk.RegenerateAsync();
         }
     }
 }

@@ -4,10 +4,26 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Mathematics;
 using System;
+using System.Threading.Tasks;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
+
+    private struct CornerBatchData
+    {
+        public int capacity;
+        public List<Matrix4x4> matrices;
+        public List<Vector4> colors;
+
+        public CornerBatchData(int capacity)
+        {
+            this.capacity = capacity;
+            matrices = new List<Matrix4x4>(capacity);
+            colors = new List<Vector4>(capacity);
+        }
+    }
+
     private struct CornerBatch
     {
         public List<Matrix4x4> matrices;
@@ -20,10 +36,24 @@ public class Chunk : MonoBehaviour
         }
     }
 
+    private struct MeshData
+    {
+        public List<Vector3> vertices;
+        public List<int> triangles;
+
+        public MeshData(List<Vector3> vertices, List<int> triangles)
+        {
+            this.vertices = vertices;
+            this.triangles = triangles;
+        }
+    }
+
     private MeshFilter meshFilter;
     private ChunkManager manager;
     private float[,,] noiseValues;
     private List<CornerBatch> cornerBatches = null;
+    private Vector3Int coordinate;
+    private Vector3 position;
 
     private void Awake()
     {
@@ -33,7 +63,9 @@ public class Chunk : MonoBehaviour
     private void Start()
     {
         manager = ChunkManager.Instance;
-        Regenerate();
+        coordinate = Vector3Int.RoundToInt(transform.position / manager.sideSize);
+        position = transform.position;
+        RegenerateAsync();
     }
 
     private void Update()
@@ -57,11 +89,42 @@ public class Chunk : MonoBehaviour
         }
     }
 
+    public async void RegenerateAsync()
+    {
+        (MeshData meshData, List<CornerBatchData> cornerBatchesData) = await Task.Run(() =>
+        {
+            GenerateNoiseValues();
+            return (GenerateMeshData(), GenerateCornersData());
+        });
+        ApplyGenerationData(meshData, cornerBatchesData);
+    }
+
     public void Regenerate()
     {
         GenerateNoiseValues();
-        GenerateCorners();
-        GenerateMesh();
+        MeshData meshData = GenerateMeshData();
+        List<CornerBatchData> cornerBatchesData = GenerateCornersData();
+        ApplyGenerationData(meshData, cornerBatchesData);
+    }
+
+    private void ApplyGenerationData(MeshData meshData, List<CornerBatchData> cornerBatchesData)
+    {
+        meshFilter.mesh.vertices = meshData.vertices.ToArray();
+        meshFilter.mesh.triangles = meshData.triangles.ToArray();
+        meshFilter.mesh.RecalculateNormals();
+        if (cornerBatchesData == null)
+        {
+            cornerBatches = null;
+            return;
+        }
+        int colorPropertyId = Shader.PropertyToID("_BaseColor");
+        cornerBatches = new List<CornerBatch>(cornerBatchesData.Count);
+        foreach (CornerBatchData cornerBatchData in cornerBatchesData)
+        {
+            MaterialPropertyBlock properties = new();
+            properties.SetVectorArray(colorPropertyId, cornerBatchData.colors);
+            cornerBatches.Add(new CornerBatch(cornerBatchData.matrices, properties));
+        }
     }
 
     private void GenerateNoiseValues()
@@ -73,21 +136,20 @@ public class Chunk : MonoBehaviour
             {
                 for (uint x = 0; x < manager.sideSegmentCount + 1; x++)
                 {
-                    float3 coordinate = manager.noiseScale / (float)manager.sideSegmentCount * new float3(x, y, z)
-                        + (float3)transform.position / manager.sideSize;
-                    float value = math.unlerp(-1f, 1f, noise.snoise(coordinate));
+                    float3 noiseCoordinate = (float3)(Vector3)coordinate +
+                        manager.noiseScale / (float)manager.sideSegmentCount * new float3(x, y, z);
+                    float value = math.unlerp(-1f, 1f, noise.snoise(noiseCoordinate));
                     noiseValues[z, y, x] = value;
                 }
             }
         }
     }
 
-    private void GenerateCorners()
+    private List<CornerBatchData> GenerateCornersData()
     {
         if (manager.cornersGeneration == CornersGeneration.None)
         {
-            cornerBatches = null;
-            return;
+            return null;
         }
         int maxCornersCount = (int)(manager.sideSegmentCount + 1 * manager.sideSegmentCount + 1 * manager.sideSegmentCount + 1);
         const int INSTANCES_COUNT_LIMIT = 1020;
@@ -96,9 +158,7 @@ public class Chunk : MonoBehaviour
         {
             batchesCount++;
         }
-        cornerBatches = new List<CornerBatch>(batchesCount);
-        List<Vector4> colors = null;
-        int colorPropertyId = Shader.PropertyToID("_BaseColor");
+        List<CornerBatchData> cornerBatchesData = new(batchesCount);
         int batch = 0;
         for (uint z = 0; z < manager.sideSegmentCount + 1; z++)
         {
@@ -112,28 +172,25 @@ public class Chunk : MonoBehaviour
                     {
                         continue;
                     }
-                    if (batch == cornerBatches.Count)
+                    if (batch == cornerBatchesData.Count)
                     {
-                        cornerBatches.Add(new CornerBatch(new List<Matrix4x4>(INSTANCES_COUNT_LIMIT),
-                            new MaterialPropertyBlock()));
-                        colors = new List<Vector4>(INSTANCES_COUNT_LIMIT);
+                        cornerBatchesData.Add(new CornerBatchData(INSTANCES_COUNT_LIMIT));
                     }
                     Vector3 localPosition = manager.sideSize / (float)manager.sideSegmentCount * new Vector3(x, y, z);
-                    cornerBatches[batch].matrices.Add(Matrix4x4.TRS(transform.position + localPosition,
+                    cornerBatchesData[batch].matrices.Add(Matrix4x4.TRS(position + localPosition,
                         Quaternion.identity, new Vector3(0.2f, 0.2f, 0.2f)));
-                    colors.Add(new Vector4(value, value, value, 1f));
-                    if (colors.Count == INSTANCES_COUNT_LIMIT)
+                    cornerBatchesData[batch].colors.Add(new Vector4(value, value, value, 1f));
+                    if (cornerBatchesData[batch].matrices.Count == INSTANCES_COUNT_LIMIT)
                     {
-                        cornerBatches[batch].properties.SetVectorArray(colorPropertyId, colors);
                         batch++;
                     }
                 }
             }
         }
-        cornerBatches[^1].properties.SetVectorArray(colorPropertyId, colors);
+        return cornerBatchesData;
     }
 
-    private void GenerateMesh()
+    private MeshData GenerateMeshData()
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
@@ -143,20 +200,14 @@ public class Chunk : MonoBehaviour
             {
                 for (int x = 0; x < manager.sideSegmentCount; x++)
                 {
-                    GenerateMeshCube(new Vector3Int(x, y, z), vertices, triangles);
+                    GenerateMeshDataCube(new Vector3Int(x, y, z), vertices, triangles);
                 }
             }
         }
-        Mesh mesh  = new()
-        {
-            vertices = vertices.ToArray(),
-            triangles = triangles.ToArray(),
-        };
-        mesh.RecalculateNormals();
-        meshFilter.mesh = mesh;
+        return new MeshData(vertices, triangles);
     }
 
-    private void GenerateMeshCube(Vector3Int frontBottomLeft, List<Vector3> vertices, List<int> triangles)
+    private void GenerateMeshDataCube(Vector3Int frontBottomLeft, List<Vector3> vertices, List<int> triangles)
     {
         int lookupCaseIndex = 0;
         int i = 0b0000_0001;
