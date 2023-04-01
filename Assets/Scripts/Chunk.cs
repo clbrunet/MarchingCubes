@@ -24,6 +24,7 @@ public class Chunk : MonoBehaviour
     private ChunkManager manager;
     private float[,,] noiseValues;
     private Vector3Int coordinate;
+    private static int applyGenerationDataFrameLocked = -1;
 
     private void Awake()
     {
@@ -48,14 +49,27 @@ public class Chunk : MonoBehaviour
         {
             return;
         }
-        ApplyGenerationData(meshData);
+        StartCoroutine(ApplyGenerationData(meshData));
     }
 
-    private void ApplyGenerationData(MeshData meshData)
+    private IEnumerator ApplyGenerationData(MeshData meshData)
     {
-        meshFilter.mesh.vertices = meshData.vertices.ToArray();
-        meshFilter.mesh.triangles = meshData.triangles.ToArray();
-        meshFilter.mesh.RecalculateNormals();
+        while (true)
+        {
+            if (applyGenerationDataFrameLocked != Time.frameCount)
+            {
+                applyGenerationDataFrameLocked = Time.frameCount;
+                break;
+            }
+            yield return null;
+        }
+        Mesh mesh = new()
+        {
+            vertices = meshData.vertices.ToArray(),
+            triangles = meshData.triangles.ToArray(),
+        };
+        mesh.RecalculateNormals();
+        meshFilter.mesh = mesh;
     }
 
     private void RegenerateNoiseValues()

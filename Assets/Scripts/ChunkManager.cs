@@ -32,11 +32,6 @@ public class ChunkManager : MonoBehaviour
         camera = Camera.main;
     }
 
-    private void Start()
-    {
-        LoadChunksAroundCamera();
-    }
-
     private void Update()
     {
         LoadChunksAroundCamera();
