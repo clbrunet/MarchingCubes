@@ -8,16 +8,16 @@ public class ChunkManager : MonoBehaviour
     public static ChunkManager Instance { get; private set; }
 
     [SerializeField]
-    [Range(1, 20)]
+    [Range(1, 12)]
     private int chunkViewDistance = 4;
     [SerializeField]
     private Transform chunksParent;
     [SerializeField]
     private Chunk chunkPrefab;
     [Range(0.00001f, 64f)]
-    public float sideSize = 16f;
-    [Range(1, 64)]
-    public uint sideSegmentCount = 16;
+    public float axisSize = 16f;
+    [Range(1, 48)]
+    public uint axisSegmentCount = 16;
     public float noiseScale = 1f;
     [Range(0.0f, 1.0f)]
     public float isosurfaceThreshold = 0.7f;
@@ -54,8 +54,8 @@ public class ChunkManager : MonoBehaviour
 
     private void LoadChunks()
     {
-        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / sideSize);
-        int radius = chunkViewDistance / 2;
+        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / axisSize);
+        int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
         Vector3Int backTopRight = new(cameraChunkCoordinate.x + radius,
@@ -79,7 +79,7 @@ public class ChunkManager : MonoBehaviour
             return false;
         }
         chunks.Add(coordinate,
-            Instantiate(chunkPrefab, (Vector3)coordinate * sideSize, Quaternion.identity, chunksParent));
+            Instantiate(chunkPrefab, (Vector3)coordinate * axisSize, Quaternion.identity, chunksParent));
         return true;
     }
 }

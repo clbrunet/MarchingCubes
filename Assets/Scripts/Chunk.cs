@@ -33,7 +33,7 @@ public class Chunk : MonoBehaviour
     private void Start()
     {
         manager = ChunkManager.Instance;
-        coordinate = Vector3Int.RoundToInt(transform.position / manager.sideSize);
+        coordinate = Vector3Int.RoundToInt(transform.position / manager.axisSize);
         RegenerateAsync();
     }
 
@@ -60,15 +60,15 @@ public class Chunk : MonoBehaviour
 
     private void RegenerateNoiseValues()
     {
-        noiseValues = new float[manager.sideSegmentCount + 1, manager.sideSegmentCount + 1, manager.sideSegmentCount + 1];
-        for (uint z = 0; z < manager.sideSegmentCount + 1; z++)
+        noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1, manager.axisSegmentCount + 1];
+        for (uint z = 0; z < manager.axisSegmentCount + 1; z++)
         {
-            for (uint y = 0; y < manager.sideSegmentCount + 1; y++)
+            for (uint y = 0; y < manager.axisSegmentCount + 1; y++)
             {
-                for (uint x = 0; x < manager.sideSegmentCount + 1; x++)
+                for (uint x = 0; x < manager.axisSegmentCount + 1; x++)
                 {
                     float3 noiseCoordinate = (float3)(Vector3)coordinate +
-                        manager.noiseScale / (float)manager.sideSegmentCount * new float3(x, y, z);
+                        manager.noiseScale / (float)manager.axisSegmentCount * new float3(x, y, z);
                     float value = math.unlerp(-1f, 1f, noise.snoise(noiseCoordinate));
                     noiseValues[z, y, x] = value;
                 }
@@ -80,11 +80,11 @@ public class Chunk : MonoBehaviour
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
-        for (int z = 0; z < manager.sideSegmentCount; z++)
+        for (int z = 0; z < manager.axisSegmentCount; z++)
         {
-            for (int y = 0; y < manager.sideSegmentCount; y++)
+            for (int y = 0; y < manager.axisSegmentCount; y++)
             {
-                for (int x = 0; x < manager.sideSegmentCount; x++)
+                for (int x = 0; x < manager.axisSegmentCount; x++)
                 {
                     RegenerateMeshDataCube(new Vector3Int(x, y, z), vertices, triangles);
                 }
@@ -115,7 +115,7 @@ public class Chunk : MonoBehaviour
                 int triangleEdge = trianglesEdges[j];
                 Vector3Int cornerA = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_A[triangleEdge]];
                 Vector3Int cornerB = LookupTables.CORNERS[LookupTables.EDGE_TO_CORNER_B[triangleEdge]];
-                Vector3 vertex = manager.sideSize / (float)manager.sideSegmentCount
+                Vector3 vertex = manager.axisSize / (float)manager.axisSegmentCount
                     * ((Vector3)(cornerA + cornerB) / 2f + frontBottomLeft);
                 vertices.Add(vertex);
             }
