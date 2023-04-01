@@ -34,13 +34,18 @@ public class ChunkManager : MonoBehaviour
 
     private void Start()
     {
-        LoadChunks();
+        LoadChunksAroundCamera();
+    }
+
+    private void Update()
+    {
+        LoadChunksAroundCamera();
     }
 
     public void ReloadChunks()
     {
         DestroyChunks();
-        LoadChunks();
+        LoadChunksAroundCamera();
     }
 
     private void DestroyChunks()
@@ -52,8 +57,9 @@ public class ChunkManager : MonoBehaviour
         chunks.Clear();
     }
 
-    private void LoadChunks()
+    private void LoadChunksAroundCamera()
     {
+        HashSet<Vector3Int> chunksToDestroy = new(chunks.Keys);
         Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / axisSize);
         int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
@@ -66,9 +72,16 @@ public class ChunkManager : MonoBehaviour
             {
                 for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
                 {
-                    TryAddChunk(new Vector3Int(x, y, z));
+                    Vector3Int coordinate = new(x, y, z);
+                    TryAddChunk(coordinate);
+                    chunksToDestroy.Remove(coordinate);
                 }
             }
+        }
+        foreach (Vector3Int coordinate in chunksToDestroy)
+        {
+            Destroy(chunks[coordinate].gameObject);
+            chunks.Remove(coordinate);
         }
     }
 

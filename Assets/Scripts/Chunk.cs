@@ -37,7 +37,7 @@ public class Chunk : MonoBehaviour
         RegenerateAsync();
     }
 
-    public async void RegenerateAsync()
+    private async void RegenerateAsync()
     {
         MeshData meshData = await Task.Run(() =>
         {
