@@ -74,15 +74,16 @@ public class Chunk : MonoBehaviour
 
     private void RegenerateNoiseValues()
     {
-        noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1, manager.axisSegmentCount + 1];
-        for (uint z = 0; z < manager.axisSegmentCount + 1; z++)
+        noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
+            manager.axisSegmentCount + 1];
+        for (uint z = 0; z <= manager.axisSegmentCount; z++)
         {
-            for (uint y = 0; y < manager.axisSegmentCount + 1; y++)
+            for (uint y = 0; y <= manager.axisSegmentCount; y++)
             {
-                for (uint x = 0; x < manager.axisSegmentCount + 1; x++)
+                for (uint x = 0; x <= manager.axisSegmentCount; x++)
                 {
-                    float3 noiseCoordinate = (float3)(Vector3)coordinate +
-                        manager.noiseScale / (float)manager.axisSegmentCount * new float3(x, y, z);
+                    Vector3 pointCoordinate = coordinate + new Vector3(x, y, z) / (float)manager.axisSegmentCount;
+                    float3 noiseCoordinate = pointCoordinate * manager.noiseScale;
                     float value = math.unlerp(-1f, 1f, noise.snoise(noiseCoordinate));
                     noiseValues[z, y, x] = value;
                 }
