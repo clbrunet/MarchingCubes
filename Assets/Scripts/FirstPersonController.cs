@@ -35,14 +35,13 @@ public class FirstPersonController : MonoBehaviour
 
     private void LateUpdate()
     {
-        Vector3 inputDirection = GetInputDirection();
-        float speedMultiplier = GetSpeedMultiplier();
-        transform.Translate(speedMultiplier * speed * Time.deltaTime * inputDirection);
-
         if (Cursor.lockState != CursorLockMode.Locked)
         {
             return;
         }
+        Vector3 inputDirection = GetInputDirection();
+        float speedMultiplier = GetSpeedMultiplier();
+        transform.Translate(speedMultiplier * speed * Time.deltaTime * inputDirection);
         Vector2 mouseInput = GetMouseInput();
         Vector3 eulerAngles = transform.eulerAngles;
         eulerAngles.y += sensitivity * mouseInput.x;
