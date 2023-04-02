@@ -16,26 +16,22 @@ public class FirstPersonController : MonoBehaviour
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
+        GameManager.Instance.OnPauseStateChanged += GameManager_OnPauseStateChanged;
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            if (Cursor.lockState == CursorLockMode.Locked)
-            {
-                Cursor.lockState = CursorLockMode.None;
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
-        }
+        GameManager.Instance.OnPauseStateChanged -= GameManager_OnPauseStateChanged;
+    }
+
+    private void GameManager_OnPauseStateChanged(bool isGamePaused)
+    {
+        Cursor.lockState = isGamePaused ? CursorLockMode.None : CursorLockMode.Locked;
     }
 
     private void LateUpdate()
     {
-        if (Cursor.lockState != CursorLockMode.Locked)
+        if (GameManager.Instance.IsGamePaused())
         {
             return;
         }
