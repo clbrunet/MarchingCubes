@@ -6,15 +6,24 @@ using UnityEngine;
 [CustomEditor(typeof(ChunkManager))]
 public class ChunkManager_Inspector : Editor
 {
+    private static bool autoReloadChunks;
+
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
-        if (EditorApplication.isPlaying)
+        bool defaultInspector = DrawDefaultInspector();
+        if (!EditorApplication.isPlaying)
         {
-            if (GUILayout.Button("Reload chunks"))
-            {
-                (target as ChunkManager).ReloadChunks();
-            }
+            return;
+        }
+        autoReloadChunks = EditorGUILayout.Toggle("Auto reload chunks", autoReloadChunks);
+        bool reloadButton = false;
+        if (!autoReloadChunks)
+        {
+            reloadButton = GUILayout.Button("Reload chunks");
+        }
+        if ((autoReloadChunks && defaultInspector) || reloadButton)
+        {
+            (target as ChunkManager).ReloadChunks();
         }
     }
 }
