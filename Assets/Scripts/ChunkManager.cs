@@ -22,24 +22,35 @@ public class ChunkManager : MonoBehaviour
     [Range(0.0f, 1.0f)]
     public float isosurfaceThreshold = 0.7f;
 
-    private new Camera camera;
+    private Transform viewer;
+    private float chunksUpdateMinimumViewerMovementsSquared;
+    private Vector3 lastChunksUpdateViewerPosition;
     private readonly Dictionary<Vector3Int, Chunk> chunks = new();
 
     private void Awake()
     {
         Assert.IsNull(Instance);
         Instance = this;
-        camera = Camera.main;
+        viewer = Camera.main.transform;
+        chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
+        lastChunksUpdateViewerPosition = viewer.position
+            + chunksUpdateMinimumViewerMovementsSquared * Vector3.one;
     }
 
     private void Update()
     {
-        LoadChunksAroundCamera();
+        if ((viewer.position - lastChunksUpdateViewerPosition).sqrMagnitude
+            > chunksUpdateMinimumViewerMovementsSquared)
+        {
+            LoadChunksAroundCamera();
+            lastChunksUpdateViewerPosition = viewer.position;
+        }
     }
 
     public void ReloadChunks()
     {
         DestroyChunks();
+        chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
         LoadChunksAroundCamera();
     }
 
@@ -55,7 +66,7 @@ public class ChunkManager : MonoBehaviour
     private void LoadChunksAroundCamera()
     {
         HashSet<Vector3Int> chunksToDestroy = new(chunks.Keys);
-        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(camera.transform.position / axisSize);
+        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(viewer.transform.position / axisSize);
         int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
