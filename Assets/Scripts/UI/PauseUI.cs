@@ -6,10 +6,16 @@ using UnityEngine.UI;
 public class PauseUI : MonoBehaviour
 {
     [SerializeField]
+    private Toggle vSyncToggle;
+    [SerializeField]
     private Button quitButton;
 
     private void Awake()
     {
+        vSyncToggle.onValueChanged.AddListener((bool value) =>
+        {
+            QualitySettings.vSyncCount = (value) ? 1 : 0;
+        });
         quitButton.onClick.AddListener(() =>
         {
 #if UNITY_EDITOR
@@ -18,6 +24,11 @@ public class PauseUI : MonoBehaviour
             Application.Quit();
 #endif
         });
+    }
+
+    private void OnEnable()
+    {
+        vSyncToggle.SetIsOnWithoutNotify(QualitySettings.vSyncCount != 0);
     }
 
     private void Start()

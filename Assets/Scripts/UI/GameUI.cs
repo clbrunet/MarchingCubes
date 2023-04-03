@@ -15,7 +15,7 @@ public class GameUI : MonoBehaviour
 
     private IEnumerator UpdateFPSText(float interval = 0.1f)
     {
-        WaitForSeconds waitForSeconds = new WaitForSeconds(interval);
+        WaitForSeconds waitForSeconds = new(interval);
         while (true)
         {
             FPSText.text = (int)(1f / Time.unscaledDeltaTime) + " FPS";
