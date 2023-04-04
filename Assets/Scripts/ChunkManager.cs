@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -13,9 +14,15 @@ public class ChunkManager : MonoBehaviour
     private Transform chunksParent;
     [SerializeField]
     private Chunk chunkPrefab;
+    [SerializeField]
+    [Range(1, 100)]
+    private int maxChunksRemovedPerFrame = 20;
+    [SerializeField]
+    [Range(1, 100)]
+    private int maxChunksAddedPerFrame = 20;
     [Range(0.00001f, 64f)]
     public float axisSize = 16f;
-    [Range(1, 48)]
+    [Range(4, 16)]
     public uint axisSegmentCount = 16;
     public float noiseScale = 1f;
     [Range(0.0f, 1.0f)]
@@ -25,6 +32,8 @@ public class ChunkManager : MonoBehaviour
     private float chunksUpdateMinimumViewerMovementsSquared;
     private Vector3 lastChunksUpdateViewerPosition;
     private readonly Dictionary<Vector3Int, Chunk> chunks = new();
+    private readonly HashSet<Vector3Int> chunksToAdd = new();
+    private readonly HashSet<Vector3Int> chunksToRemove = new();
 
     private void Awake()
     {
@@ -41,30 +50,29 @@ public class ChunkManager : MonoBehaviour
         if ((viewer.position - lastChunksUpdateViewerPosition).sqrMagnitude
             > chunksUpdateMinimumViewerMovementsSquared)
         {
-            LoadChunksAroundCamera();
+            UpdateChunksToAddAndToRemove();
             lastChunksUpdateViewerPosition = viewer.position;
         }
+        RemoveChunks();
+        AddChunks();
     }
 
     public void ReloadChunks()
-    {
-        DestroyChunks();
-        chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
-        LoadChunksAroundCamera();
-    }
-
-    private void DestroyChunks()
     {
         foreach (Chunk chunk in chunks.Values)
         {
             Destroy(chunk.gameObject);
         }
         chunks.Clear();
+        chunksToRemove.Clear();
+        chunksToAdd.Clear();
+        chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
+        UpdateChunksToAddAndToRemove();
     }
 
-    private void LoadChunksAroundCamera()
+    private void UpdateChunksToAddAndToRemove()
     {
-        HashSet<Vector3Int> chunksToDestroy = new(chunks.Keys);
+        chunksToRemove.UnionWith(chunks.Keys);
         Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(viewer.transform.position / axisSize);
         int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
@@ -78,26 +86,35 @@ public class ChunkManager : MonoBehaviour
                 for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
                 {
                     Vector3Int coordinate = new(x, y, z);
-                    TryAddChunk(coordinate);
-                    chunksToDestroy.Remove(coordinate);
+                    if (!chunks.ContainsKey(coordinate))
+                    {
+                        chunksToAdd.Add(coordinate);
+                    }
+                    chunksToRemove.Remove(coordinate);
                 }
             }
         }
-        foreach (Vector3Int coordinate in chunksToDestroy)
+    }
+
+    private void RemoveChunks()
+    {
+        for (int i = Mathf.Min(maxChunksRemovedPerFrame, chunksToRemove.Count); i > 0; i--)
         {
-            Destroy(chunks[coordinate].gameObject);
-            chunks.Remove(coordinate);
+            Vector3Int chunkToRemove = chunksToRemove.ElementAt(0);
+            Destroy(chunks[chunkToRemove].gameObject);
+            chunks.Remove(chunkToRemove);
+            chunksToRemove.Remove(chunkToRemove);
         }
     }
 
-    private bool TryAddChunk(Vector3Int coordinate)
+    private void AddChunks()
     {
-        if (chunks.ContainsKey(coordinate))
+        for (int i = Mathf.Min(maxChunksAddedPerFrame, chunksToAdd.Count); i > 0; i--)
         {
-            return false;
+            Vector3Int chunkToAdd = chunksToAdd.ElementAt(0);
+            chunks.Add(chunkToAdd,
+                Instantiate(chunkPrefab, (Vector3)chunkToAdd * axisSize, Quaternion.identity, chunksParent));
+            chunksToAdd.Remove(chunkToAdd);
         }
-        chunks.Add(coordinate,
-            Instantiate(chunkPrefab, (Vector3)coordinate * axisSize, Quaternion.identity, chunksParent));
-        return true;
     }
 }

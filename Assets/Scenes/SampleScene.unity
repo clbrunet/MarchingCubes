@@ -200,6 +200,8 @@ MonoBehaviour:
   chunksParent: {fileID: 662068842}
   chunkPrefab: {fileID: 6384766017849542809, guid: dff74f9d01c25c345819ac4d63936588,
     type: 3}
+  maxChunksRemovedPerFrame: 20
+  maxChunksAddedPerFrame: 20
   axisSize: 16
   axisSegmentCount: 16
   noiseScale: 0.4
