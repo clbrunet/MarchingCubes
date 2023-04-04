@@ -14,7 +14,7 @@ public class PauseUI : MonoBehaviour
     {
         vSyncToggle.onValueChanged.AddListener((bool value) =>
         {
-            QualitySettings.vSyncCount = (value) ? 1 : 0;
+            SettingsManager.Instance.SetVSync(value);
         });
         quitButton.onClick.AddListener(() =>
         {
