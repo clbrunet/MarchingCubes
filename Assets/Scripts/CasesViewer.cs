@@ -1,9 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
-using Unity.Mathematics;
-using System.Data;
 
 public class CasesViewer : MonoBehaviour
 {
