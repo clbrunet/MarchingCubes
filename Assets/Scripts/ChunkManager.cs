@@ -7,18 +7,15 @@ public class ChunkManager : MonoBehaviour
 {
     public static ChunkManager Instance { get; private set; }
 
-    [SerializeField]
-    [Range(1, 12)]
+    [SerializeField, Range(1, 12)]
     private int chunkViewDistance = 4;
     [SerializeField]
     private Transform chunksParent;
     [SerializeField]
     private Chunk chunkPrefab;
-    [SerializeField]
-    [Range(1, 100)]
+    [SerializeField, Range(1, 100)]
     private int maxChunksRemovedPerFrame = 20;
-    [SerializeField]
-    [Range(1, 100)]
+    [SerializeField, Range(1, 100)]
     private int maxChunksAddedPerFrame = 20;
     [Range(0.00001f, 64f)]
     public float axisSize = 16f;
