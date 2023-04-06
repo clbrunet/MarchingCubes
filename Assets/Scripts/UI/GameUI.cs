@@ -52,7 +52,7 @@ public class GameUI : MonoBehaviour
         }
         FPSText.SetText("{0:0} FPS (\u2193{1:0} \u2191{2:0})",
             frameDurationsSample.count / frameDurationsSample.sum,
-            1f / frameDurationsSample.min, 1f / frameDurationsSample.max);
+            1f / frameDurationsSample.max, 1f / frameDurationsSample.min);
         ResetCurrentFPSSample();
     }
 
