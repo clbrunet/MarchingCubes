@@ -14,9 +14,7 @@ public class ChunkManager : MonoBehaviour
     [SerializeField]
     private Chunk chunkPrefab;
     [SerializeField, Range(1, 100)]
-    private int maxChunksRemovedPerFrame = 20;
-    [SerializeField, Range(1, 100)]
-    private int maxChunksAddedPerFrame = 20;
+    private int maxChunksRecycledPerFrame = 20;
     [Range(0.00001f, 64f)]
     public float axisSize = 16f;
     [Range(4, 16)]
@@ -37,21 +35,11 @@ public class ChunkManager : MonoBehaviour
         Assert.IsNull(Instance);
         Instance = this;
         viewer = Camera.main.transform;
-        chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
-        lastChunksUpdateViewerPosition = viewer.position
-            + chunksUpdateMinimumViewerMovementsSquared * Vector3.one;
     }
 
-    private void Update()
+    private void Start()
     {
-        if ((viewer.position - lastChunksUpdateViewerPosition).sqrMagnitude
-            > chunksUpdateMinimumViewerMovementsSquared)
-        {
-            UpdateChunksToAddAndToRemove();
-            lastChunksUpdateViewerPosition = viewer.position;
-        }
-        RemoveChunks();
-        AddChunks();
+        ReloadChunks();
     }
 
     public void ReloadChunks()
@@ -65,12 +53,30 @@ public class ChunkManager : MonoBehaviour
         chunksToAdd.Clear();
         chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
         UpdateChunksToAddAndToRemove();
+        foreach (Vector3Int chunkToAdd in chunksToAdd)
+        {
+            Chunk chunk = Instantiate(chunkPrefab, (Vector3)chunkToAdd * axisSize, Quaternion.identity, chunksParent);
+            chunk.RegenerateAsync(chunkToAdd);
+            chunks.Add(chunkToAdd, chunk);
+        }
+        chunksToAdd.Clear();
+    }
+
+    private void Update()
+    {
+        if ((viewer.position - lastChunksUpdateViewerPosition).sqrMagnitude
+            > chunksUpdateMinimumViewerMovementsSquared)
+        {
+            UpdateChunksToAddAndToRemove();
+        }
+        RecycleChunks();
     }
 
     private void UpdateChunksToAddAndToRemove()
     {
         chunksToRemove.UnionWith(chunks.Keys);
-        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(viewer.transform.position / axisSize);
+        chunksToAdd.Clear();
+        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(viewer.position / axisSize);
         int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
@@ -91,27 +97,21 @@ public class ChunkManager : MonoBehaviour
                 }
             }
         }
+        lastChunksUpdateViewerPosition = viewer.position;
     }
 
-    private void RemoveChunks()
+    private void RecycleChunks()
     {
-        for (int i = Mathf.Min(maxChunksRemovedPerFrame, chunksToRemove.Count); i > 0; i--)
+        for (int i = Mathf.Min(maxChunksRecycledPerFrame, chunksToAdd.Count); i > 0; i--)
         {
             Vector3Int chunkToRemove = chunksToRemove.ElementAt(0);
-            Destroy(chunks[chunkToRemove].gameObject);
-            chunks.Remove(chunkToRemove);
-            chunksToRemove.Remove(chunkToRemove);
-        }
-    }
-
-    private void AddChunks()
-    {
-        for (int i = Mathf.Min(maxChunksAddedPerFrame, chunksToAdd.Count); i > 0; i--)
-        {
             Vector3Int chunkToAdd = chunksToAdd.ElementAt(0);
-            chunks.Add(chunkToAdd,
-                Instantiate(chunkPrefab, (Vector3)chunkToAdd * axisSize, Quaternion.identity, chunksParent));
+            Chunk chunk = chunks[chunkToRemove];
+            chunk.RegenerateAsync(chunkToAdd);
+            chunks[chunkToAdd] = chunk;
             chunksToAdd.Remove(chunkToAdd);
+            chunksToRemove.Remove(chunkToRemove);
+            chunks.Remove(chunkToRemove);
         }
     }
 }

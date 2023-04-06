@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using System.Threading.Tasks;
+using UnityEngine.Assertions;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
@@ -23,22 +24,22 @@ public class Chunk : MonoBehaviour
     private ChunkManager manager;
     private float[,,] noiseValues;
     private Vector3Int coordinate;
-    private static int applyGenerationDataFrameLocked = -1;
 
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
-    }
-
-    private void Start()
-    {
         manager = ChunkManager.Instance;
-        coordinate = Vector3Int.RoundToInt(transform.position / manager.axisSize);
-        RegenerateAsync();
+        Assert.IsNotNull(manager);
     }
 
-    private async void RegenerateAsync()
+    public async void RegenerateAsync(Vector3Int coordinate)
     {
+        if (meshFilter.mesh != null)
+        {
+            meshFilter.mesh.Clear();
+        }
+        this.coordinate = coordinate;
+        transform.position = (Vector3)coordinate * manager.axisSize;
         MeshData meshData = await Task.Run(() =>
         {
             RegenerateNoiseValues();
@@ -47,20 +48,6 @@ public class Chunk : MonoBehaviour
         if (this == null)
         {
             return;
-        }
-        StartCoroutine(ApplyGenerationData(meshData));
-    }
-
-    private IEnumerator ApplyGenerationData(MeshData meshData)
-    {
-        while (true)
-        {
-            if (applyGenerationDataFrameLocked != Time.frameCount)
-            {
-                applyGenerationDataFrameLocked = Time.frameCount;
-                break;
-            }
-            yield return null;
         }
         Mesh mesh = new()
         {

@@ -200,8 +200,7 @@ MonoBehaviour:
   chunksParent: {fileID: 662068842}
   chunkPrefab: {fileID: 6384766017849542809, guid: dff74f9d01c25c345819ac4d63936588,
     type: 3}
-  maxChunksRemovedPerFrame: 20
-  maxChunksAddedPerFrame: 20
+  maxChunksRecycledPerFrame: 20
   axisSize: 16
   axisSegmentCount: 16
   noiseScale: 0.4
@@ -506,7 +505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c09a7b75fdd7b84aa018fff148b1de5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 8
+  speed: 16
   sensitivity: 8
   pitchMin: -89
   pitchMax: 89
