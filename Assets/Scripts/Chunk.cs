@@ -22,14 +22,18 @@ public class Chunk : MonoBehaviour
 
     private MeshFilter meshFilter;
     private ChunkManager manager;
-    private float[,,] noiseValues;
     private Vector3Int coordinate;
+    private float[,,] noiseValues;
+    private MeshData meshData;
 
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
         manager = ChunkManager.Instance;
         Assert.IsNotNull(manager);
+        noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
+            manager.axisSegmentCount + 1];
+        meshData = new MeshData(new List<Vector3>(), new List<int>());
     }
 
     public async void RegenerateAsync(Vector3Int coordinate)
@@ -40,10 +44,10 @@ public class Chunk : MonoBehaviour
         }
         this.coordinate = coordinate;
         transform.position = (Vector3)coordinate * manager.axisSize;
-        MeshData meshData = await Task.Run(() =>
+        await Task.Run(() =>
         {
             RegenerateNoiseValues();
-            return RegenerateMeshData();
+            RegenerateMeshData();
         });
         if (this == null)
         {
@@ -60,8 +64,6 @@ public class Chunk : MonoBehaviour
 
     private void RegenerateNoiseValues()
     {
-        noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
-            manager.axisSegmentCount + 1];
         for (uint z = 0; z <= manager.axisSegmentCount; z++)
         {
             for (uint y = 0; y <= manager.axisSegmentCount; y++)
@@ -77,21 +79,20 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    private MeshData RegenerateMeshData()
+    private void RegenerateMeshData()
     {
-        List<Vector3> vertices = new();
-        List<int> triangles = new();
+        meshData.vertices.Clear();
+        meshData.triangles.Clear();
         for (int z = 0; z < manager.axisSegmentCount; z++)
         {
             for (int y = 0; y < manager.axisSegmentCount; y++)
             {
                 for (int x = 0; x < manager.axisSegmentCount; x++)
                 {
-                    RegenerateMeshDataCube(new Vector3Int(x, y, z), vertices, triangles);
+                    RegenerateMeshDataCube(new Vector3Int(x, y, z), meshData.vertices, meshData.triangles);
                 }
             }
         }
-        return new MeshData(vertices, triangles);
     }
 
     private void RegenerateMeshDataCube(Vector3Int frontBottomLeft, List<Vector3> vertices, List<int> triangles)
