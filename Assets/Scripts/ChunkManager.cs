@@ -56,7 +56,7 @@ public class ChunkManager : MonoBehaviour
         foreach (Vector3Int chunkToAdd in chunksToAdd)
         {
             Chunk chunk = Instantiate(chunkPrefab, (Vector3)chunkToAdd * axisSize, Quaternion.identity, chunksParent);
-            chunk.RegenerateAsync(chunkToAdd);
+            chunk.Regenerate(chunkToAdd);
             chunks.Add(chunkToAdd, chunk);
         }
         chunksToAdd.Clear();
@@ -107,7 +107,7 @@ public class ChunkManager : MonoBehaviour
             Vector3Int chunkToRemove = chunksToRemove.ElementAt(0);
             Vector3Int chunkToAdd = chunksToAdd.ElementAt(0);
             Chunk chunk = chunks[chunkToRemove];
-            chunk.RegenerateAsync(chunkToAdd);
+            chunk.Regenerate(chunkToAdd);
             chunks[chunkToAdd] = chunk;
             chunksToAdd.Remove(chunkToAdd);
             chunksToRemove.Remove(chunkToRemove);

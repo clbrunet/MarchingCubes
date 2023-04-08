@@ -1,8 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Mathematics;
-using System.Threading.Tasks;
 using UnityEngine.Assertions;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -20,6 +17,14 @@ public class Chunk : MonoBehaviour
         }
     }
 
+    [SerializeField]
+    private ComputeShader computeShader;
+    private readonly static int axisSegmentCountId = Shader.PropertyToID("_AxisSegmentCount");
+    private readonly static int noiseScaleId = Shader.PropertyToID("_NoiseScale");
+    private readonly static int coordinateId = Shader.PropertyToID("_Coordinate");
+    private readonly static int noiseValuesId = Shader.PropertyToID("_NoiseValues");
+    private ComputeBuffer noiseValuesBuffer;
+
     private MeshFilter meshFilter;
     private ChunkManager manager;
     private Vector3Int coordinate;
@@ -31,12 +36,18 @@ public class Chunk : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         manager = ChunkManager.Instance;
         Assert.IsNotNull(manager);
+        noiseValuesBuffer = new ComputeBuffer((int)Mathf.Pow(manager.axisSegmentCount + 1, 3), sizeof(float));
         noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
             manager.axisSegmentCount + 1];
         meshData = new MeshData(new List<Vector3>(), new List<int>());
     }
 
-    public async void RegenerateAsync(Vector3Int coordinate)
+    private void OnDestroy()
+    {
+        noiseValuesBuffer.Release();
+    }
+
+    public void Regenerate(Vector3Int coordinate)
     {
         if (meshFilter.mesh != null)
         {
@@ -44,15 +55,8 @@ public class Chunk : MonoBehaviour
         }
         this.coordinate = coordinate;
         transform.position = (Vector3)coordinate * manager.axisSize;
-        await Task.Run(() =>
-        {
-            RegenerateNoiseValues();
-            RegenerateMeshData();
-        });
-        if (this == null)
-        {
-            return;
-        }
+        RegenerateNoiseValues();
+        RegenerateMeshData();
         Mesh mesh = new()
         {
             vertices = meshData.vertices.ToArray(),
@@ -64,19 +68,13 @@ public class Chunk : MonoBehaviour
 
     private void RegenerateNoiseValues()
     {
-        for (uint z = 0; z <= manager.axisSegmentCount; z++)
-        {
-            for (uint y = 0; y <= manager.axisSegmentCount; y++)
-            {
-                for (uint x = 0; x <= manager.axisSegmentCount; x++)
-                {
-                    Vector3 pointCoordinate = coordinate + new Vector3(x, y, z) / (float)manager.axisSegmentCount;
-                    float3 noiseCoordinate = pointCoordinate * manager.noiseScale;
-                    float value = math.unlerp(-1f, 1f, noise.snoise(noiseCoordinate));
-                    noiseValues[z, y, x] = value;
-                }
-            }
-        }
+        computeShader.SetInt(axisSegmentCountId, (int)manager.axisSegmentCount);
+        computeShader.SetFloat(noiseScaleId, manager.noiseScale);
+        computeShader.SetVector(coordinateId, (Vector3)coordinate);
+        computeShader.SetBuffer(0, noiseValuesId, noiseValuesBuffer);
+        int threadGroups = Mathf.CeilToInt((float)manager.axisSegmentCount + 1 / 4f);
+        computeShader.Dispatch(0, threadGroups, threadGroups, threadGroups);
+        noiseValuesBuffer.GetData(noiseValues);
     }
 
     private void RegenerateMeshData()
