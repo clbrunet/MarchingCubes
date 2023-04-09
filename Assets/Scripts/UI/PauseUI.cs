@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,13 +7,19 @@ public class PauseUI : MonoBehaviour
     [SerializeField]
     private Toggle vSyncToggle;
     [SerializeField]
+    private Toggle displayFpsInMs;
+    [SerializeField]
     private Button quitButton;
 
     private void Awake()
     {
         vSyncToggle.onValueChanged.AddListener((bool value) =>
         {
-            SettingsManager.Instance.SetVSync(value);
+            SettingsManager.SetVSync(value);
+        });
+        displayFpsInMs.onValueChanged.AddListener((bool value) =>
+        {
+            SettingsManager.SetDisplayFpsInMs(value);
         });
         quitButton.onClick.AddListener(() =>
         {
@@ -26,7 +33,8 @@ public class PauseUI : MonoBehaviour
 
     private void OnEnable()
     {
-        vSyncToggle.SetIsOnWithoutNotify(QualitySettings.vSyncCount != 0);
+        vSyncToggle.SetIsOnWithoutNotify(Convert.ToBoolean(SettingsManager.GetVSync()));
+        displayFpsInMs.SetIsOnWithoutNotify(SettingsManager.GetDisplayFpsInMs());
     }
 
     private void Start()

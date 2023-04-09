@@ -15,12 +15,29 @@ public class GameUI : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI FPSText;
     private FrameDurationsSample frameDurationsSample;
+    private bool displayFpsInMs;
 
-    private void Start()
+    private void Awake()
     {
         FPSText.text = "";
         ResetCurrentFPSSample();
-        InvokeRepeating(nameof(UpdateFPSText), 0.1f, 0.5f);
+        displayFpsInMs = SettingsManager.GetDisplayFpsInMs();
+        SettingsManager.OnDisplayFpsInMsChanged += SettingsManager_OnDisplayFpsInMsChanged;
+    }
+
+    private void Start()
+    {
+        InvokeRepeating(nameof(UpdateFPSText), 0.5f, 0.5f);
+    }
+
+    private void OnDestroy()
+    {
+        SettingsManager.OnDisplayFpsInMsChanged -= SettingsManager_OnDisplayFpsInMsChanged;
+    }
+
+    private void SettingsManager_OnDisplayFpsInMsChanged(bool value)
+    {
+        displayFpsInMs = value;
     }
 
     private void Update()
@@ -50,9 +67,18 @@ public class GameUI : MonoBehaviour
             FPSText.text = "0 FPS";
             return;
         }
-        FPSText.SetText("{0:0} FPS (\u2193{1:0} \u2191{2:0})",
-            frameDurationsSample.count / frameDurationsSample.sum,
-            1f / frameDurationsSample.max, 1f / frameDurationsSample.min);
+        if (displayFpsInMs)
+        {
+            FPSText.SetText("{0:1} MS (\u2193{1:1} \u2191{2:1})",
+                frameDurationsSample.sum / frameDurationsSample.count * 1000,
+                frameDurationsSample.max * 1000, frameDurationsSample.min * 1000);
+        }
+        else
+        {
+            FPSText.SetText("{0:0} FPS (\u2193{1:0} \u2191{2:0})",
+                frameDurationsSample.count / frameDurationsSample.sum,
+                1f / frameDurationsSample.max, 1f / frameDurationsSample.min);
+        }
         ResetCurrentFPSSample();
     }
 
