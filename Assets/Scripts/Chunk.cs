@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
@@ -55,18 +57,20 @@ public class Chunk : MonoBehaviour
         }
         this.coordinate = coordinate;
         transform.position = (Vector3)coordinate * manager.axisSize;
-        RegenerateNoiseValues();
-        RegenerateMeshData();
-        Mesh mesh = new()
+        RegenerateNoiseValues(() =>
         {
-            vertices = meshData.vertices.ToArray(),
-            triangles = meshData.triangles.ToArray(),
-        };
-        mesh.RecalculateNormals();
-        meshFilter.mesh = mesh;
+            RegenerateMeshData();
+            Mesh mesh = new()
+            {
+                vertices = meshData.vertices.ToArray(),
+                triangles = meshData.triangles.ToArray(),
+            };
+            mesh.RecalculateNormals();
+            meshFilter.mesh = mesh;
+        });
     }
 
-    private void RegenerateNoiseValues()
+    private void RegenerateNoiseValues(Action callback)
     {
         computeShader.SetInt(axisSegmentCountId, (int)manager.axisSegmentCount);
         computeShader.SetFloat(noiseScaleId, manager.noiseScale);
@@ -74,7 +78,12 @@ public class Chunk : MonoBehaviour
         computeShader.SetBuffer(0, noiseValuesId, noiseValuesBuffer);
         int threadGroups = Mathf.CeilToInt((float)manager.axisSegmentCount + 1 / 4f);
         computeShader.Dispatch(0, threadGroups, threadGroups, threadGroups);
-        noiseValuesBuffer.GetData(noiseValues);
+        AsyncGPUReadback.Request(noiseValuesBuffer, (req) =>
+        {
+            noiseValuesBuffer.GetData(noiseValues);
+            callback?.Invoke();
+        });
+
     }
 
     private void RegenerateMeshData()
