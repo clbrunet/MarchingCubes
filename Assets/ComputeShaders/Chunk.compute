@@ -11,18 +11,27 @@ float3 _Coordinate;
 
 RWStructuredBuffer<float> _NoiseValues;
 
-[numthreads(4,4,4)]
+void GenerateNoiseValue(uint3 id)
+{
+    uint index = id.z * pow(_AxisSegmentCount + 1, 2) + id.y * (_AxisSegmentCount + 1) + id.x;
+    float3 pointCoordinate = _Coordinate + (float3) id / (float) _AxisSegmentCount;
+    float3 noiseCoordinate = pointCoordinate * _NoiseScale;
+    _NoiseValues[index] = SimplexNoise(noiseCoordinate) * 0.5 + 0.5;
+}
+
+[numthreads(4, 4, 4)]
 void GenerateNoiseValues(uint3 id : SV_DispatchThreadID)
 {
     if (id.z > _AxisSegmentCount || id.y > _AxisSegmentCount || id.x > _AxisSegmentCount)
     {
         return;
     }
-    uint index = id.z * (_AxisSegmentCount + 1) * (_AxisSegmentCount + 1) + id.y * (_AxisSegmentCount + 1) + id.x;
-    float3 pointCoordinate = _Coordinate + (float3) id / (float) _AxisSegmentCount;
-    float3 noiseCoordinate = pointCoordinate * _NoiseScale;
-    _NoiseValues[index] = SimplexNoise(noiseCoordinate) * 0.5 + 0.5;
+    GenerateNoiseValue(id);
+
 }
+
+float _AxisSize;
+float _IsosurfaceThreshold;
 
 struct Triangle
 {
@@ -31,28 +40,61 @@ struct Triangle
     float3 vertexC;
 };
 
-float _IsosurfaceThreshold;
+AppendStructuredBuffer<Triangle> _Triangles;
 
-AppendStructuredBuffer<float> _Triangles;
-
-[numthreads(4,4,4)]
-void GenerateMeshData(uint3 id : SV_DispatchThreadID)
+float3 GetVertex(uint triangleEdge, uint3 frontBottomLeft)
 {
-    if (id.z >= _AxisSegmentCount || id.y >= _AxisSegmentCount || id.x >= _AxisSegmentCount)
-    {
-        return;
-    }
+    uint3 cornerA = CORNERS[EDGE_TO_CORNER_A[triangleEdge]];
+    uint3 cornerB = CORNERS[EDGE_TO_CORNER_B[triangleEdge]];
+    //return triangleEdge;
+    //return (cornerA + cornerB) / 2.0;
+    float3 vertex = _AxisSize / (float) _AxisSegmentCount
+        * ((float3) (cornerA + cornerB) / 2.0 + (float3) frontBottomLeft);
+    return vertex;
+}
+
+void GenerateMeshDataCube(uint3 frontBottomLeft)
+{
     int lookupCaseIndex = 0;
-    int i = 0b0000_0001;
+    int i = 0x01;
     for (int j = 0; j < 8; j++)
     {
-        uint3 corner = id + CORNERS[j];
-        uint index = id.z * (_AxisSegmentCount) * (_AxisSegmentCount) + id.y * (_AxisSegmentCount) + id.x;
+        uint3 corner = frontBottomLeft + CORNERS[j];
+        uint index = frontBottomLeft.z * pow(_AxisSegmentCount, 2)
+            + frontBottomLeft.y * _AxisSegmentCount + frontBottomLeft.x;
+        if (j == 0)
+        {
+            Triangle tri;
+            tri.vertexA = 2;
+            tri.vertexB = _NoiseValues[index];
+            _Triangles.Append(tri);
+        }
         if (_NoiseValues[index] >= _IsosurfaceThreshold)
         {
             lookupCaseIndex |= i;
         }
         i <<= 1;
     }
-    uint index = id.z * (_AxisSegmentCount) * (_AxisSegmentCount) + id.y * (_AxisSegmentCount) + id.x;
+    int trianglesEdges[] = TRIANGULATION[lookupCaseIndex];
+    for (i = 0; trianglesEdges[i] >= 0 && i < 15; i += 3)
+    {
+        Triangle tri;
+        tri.vertexA = GetVertex(trianglesEdges[i + 2], frontBottomLeft);
+        tri.vertexB = GetVertex(trianglesEdges[i + 1], frontBottomLeft);
+        tri.vertexC = GetVertex(trianglesEdges[i + 0], frontBottomLeft);
+        tri.vertexA = 23;
+        tri.vertexB = i;
+        tri.vertexC = trianglesEdges[i];
+        _Triangles.Append(tri);
+    }
+}
+
+[numthreads(4, 4, 4)]
+void GenerateMeshData(uint3 id : SV_DispatchThreadID)
+{
+    if (id.z >= _AxisSegmentCount || id.y >= _AxisSegmentCount || id.x >= _AxisSegmentCount)
+    {
+        return;
+    }
+    GenerateMeshDataCube(id);
 }

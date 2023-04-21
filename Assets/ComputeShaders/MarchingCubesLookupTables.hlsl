@@ -14,7 +14,7 @@ static const uint3 CORNERS[8] =
 };
 
 // Triangulation table from http://paulbourke.net/geometry/polygonise/
-static const uint TRIANGULATION[256][16] =
+static const int TRIANGULATION[256][16] =
 {
     { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
     { 0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
