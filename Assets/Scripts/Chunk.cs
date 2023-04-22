@@ -68,7 +68,6 @@ public class Chunk : MonoBehaviour
 
     public void Regenerate(Vector3Int coordinate)
     {
-        print(coordinate);
         if (meshFilter.mesh != null)
         {
             meshFilter.mesh.Clear();
@@ -82,7 +81,6 @@ public class Chunk : MonoBehaviour
                 Vector3[] vertices = new Vector3[trianglesCount * 3];
                 int[] trianglesIndices = new int[trianglesCount * 3];
                 int i = 0;
-                print("4");
                 for (int j = 0; j < trianglesCount; j++)
                 {
                     vertices[i + 0] = triangles[j].vertexA;
@@ -93,7 +91,6 @@ public class Chunk : MonoBehaviour
                     trianglesIndices[i + 2] = i + 2;
                     i += 3;
                 }
-                print("5");
                 Mesh mesh = new()
                 {
                     vertices = vertices,
@@ -119,22 +116,18 @@ public class Chunk : MonoBehaviour
 
     private void RegenerateMeshData(Action callback)
     {
-        print("0");
         computeShader.SetBuffer(generateMeshDataKernel, noiseValuesId, noiseValuesBuffer);
         trianglesBuffer.SetCounterValue(0);
         computeShader.SetBuffer(generateMeshDataKernel, trianglesId, trianglesBuffer);
         int threadGroups = Mathf.CeilToInt((float)manager.axisSegmentCount / 4f);
         computeShader.Dispatch(generateMeshDataKernel, threadGroups, threadGroups, threadGroups);
-        print("1");
         AsyncGPUReadback.Request(trianglesBuffer, (req) =>
         {
-            print("2");
             ComputeBuffer.CopyCount(trianglesBuffer, trianglesCountBuffer, 0);
             trianglesCountBuffer.GetData(trianglesCounts);
             trianglesCount = trianglesCounts[0];
             print("count : " + trianglesCount);
             trianglesBuffer.GetData(triangles, 0, 0, trianglesCount);
-            print("3");
             print(triangles[0].vertexA);
             print(triangles[0].vertexB);
             print(triangles[0].vertexC);

@@ -46,8 +46,6 @@ float3 GetVertex(uint triangleEdge, uint3 frontBottomLeft)
 {
     uint3 cornerA = CORNERS[EDGE_TO_CORNER_A[triangleEdge]];
     uint3 cornerB = CORNERS[EDGE_TO_CORNER_B[triangleEdge]];
-    //return triangleEdge;
-    //return (cornerA + cornerB) / 2.0;
     float3 vertex = _AxisSize / (float) _AxisSegmentCount
         * ((float3) (cornerA + cornerB) / 2.0 + (float3) frontBottomLeft);
     return vertex;
@@ -60,15 +58,7 @@ void GenerateMeshDataCube(uint3 frontBottomLeft)
     for (int j = 0; j < 8; j++)
     {
         uint3 corner = frontBottomLeft + CORNERS[j];
-        uint index = frontBottomLeft.z * pow(_AxisSegmentCount, 2)
-            + frontBottomLeft.y * _AxisSegmentCount + frontBottomLeft.x;
-        if (j == 0)
-        {
-            Triangle tri;
-            tri.vertexA = 2;
-            tri.vertexB = _NoiseValues[index];
-            _Triangles.Append(tri);
-        }
+        uint index = corner.z * pow(_AxisSegmentCount, 2) + corner.y * _AxisSegmentCount + corner.x;
         if (_NoiseValues[index] >= _IsosurfaceThreshold)
         {
             lookupCaseIndex |= i;
@@ -76,15 +66,12 @@ void GenerateMeshDataCube(uint3 frontBottomLeft)
         i <<= 1;
     }
     int trianglesEdges[] = TRIANGULATION[lookupCaseIndex];
-    for (i = 0; trianglesEdges[i] >= 0 && i < 15; i += 3)
+    for (i = 0; trianglesEdges[i] >= 0; i += 3)
     {
         Triangle tri;
         tri.vertexA = GetVertex(trianglesEdges[i + 2], frontBottomLeft);
         tri.vertexB = GetVertex(trianglesEdges[i + 1], frontBottomLeft);
         tri.vertexC = GetVertex(trianglesEdges[i + 0], frontBottomLeft);
-        tri.vertexA = 23;
-        tri.vertexB = i;
-        tri.vertexC = trianglesEdges[i];
         _Triangles.Append(tri);
     }
 }
