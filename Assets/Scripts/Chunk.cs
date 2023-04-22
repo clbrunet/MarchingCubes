@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -126,15 +125,7 @@ public class Chunk : MonoBehaviour
             ComputeBuffer.CopyCount(trianglesBuffer, trianglesCountBuffer, 0);
             trianglesCountBuffer.GetData(trianglesCounts);
             trianglesCount = trianglesCounts[0];
-            print("count : " + trianglesCount);
             trianglesBuffer.GetData(triangles, 0, 0, trianglesCount);
-            print(triangles[0].vertexA);
-            print(triangles[0].vertexB);
-            print(triangles[0].vertexC);
-            print("and");
-            print(triangles[1].vertexA);
-            print(triangles[1].vertexB);
-            print(triangles[1].vertexC);
             callback?.Invoke();
         });
     }

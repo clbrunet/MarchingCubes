@@ -58,7 +58,7 @@ void GenerateMeshDataCube(uint3 frontBottomLeft)
     for (int j = 0; j < 8; j++)
     {
         uint3 corner = frontBottomLeft + CORNERS[j];
-        uint index = corner.z * pow(_AxisSegmentCount, 2) + corner.y * _AxisSegmentCount + corner.x;
+        uint index = corner.z * pow(_AxisSegmentCount + 1, 2) + corner.y * (_AxisSegmentCount + 1) + corner.x;
         if (_NoiseValues[index] >= _IsosurfaceThreshold)
         {
             lookupCaseIndex |= i;
