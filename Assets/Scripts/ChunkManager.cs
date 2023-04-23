@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -49,6 +50,9 @@ public class ChunkManager : MonoBehaviour
     private readonly HashSet<Vector3Int> chunksToAdd = new();
     private readonly HashSet<Vector3Int> chunksToRemove = new();
 
+    private bool shouldDig = false;
+    private bool shouldFill = false;
+
     private void Awake()
     {
         Assert.IsNull(Instance);
@@ -79,10 +83,11 @@ public class ChunkManager : MonoBehaviour
         foreach (Vector3Int chunkToAdd in chunksToAdd)
         {
             Chunk chunk = Instantiate(chunkPrefab, (Vector3)chunkToAdd * axisSize, Quaternion.identity, chunksParent);
-            RegenerateChunk(chunk, chunkToAdd);
+            GenerateChunk(chunk, chunkToAdd);
             chunks.Add(chunkToAdd, chunk);
         }
         chunksToAdd.Clear();
+        StartCoroutine(HandleMouseButtons());
     }
 
     private void OnDestroy()
@@ -100,6 +105,14 @@ public class ChunkManager : MonoBehaviour
             UpdateChunksToAddAndToRemove();
         }
         RecycleChunks();
+        if (Input.GetMouseButton(0))
+        {
+            shouldDig = true;
+        }
+        if (Input.GetMouseButton(1))
+        {
+            shouldFill = true;
+        }
     }
 
     private void UpdateChunksToAddAndToRemove()
@@ -137,7 +150,7 @@ public class ChunkManager : MonoBehaviour
             Vector3Int chunkToRemove = chunksToRemove.ElementAt(0);
             Vector3Int chunkToAdd = chunksToAdd.ElementAt(0);
             Chunk chunk = chunks[chunkToRemove];
-            RegenerateChunk(chunk, chunkToAdd);
+            GenerateChunk(chunk, chunkToAdd);
             chunks[chunkToAdd] = chunk;
             chunksToAdd.Remove(chunkToAdd);
             chunksToRemove.Remove(chunkToRemove);
@@ -145,7 +158,7 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
-    private void RegenerateChunk(Chunk chunk, Vector3Int coordinate)
+    private void GenerateChunk(Chunk chunk, Vector3Int coordinate)
     {
         chunkComputeShader.SetVector(coordinateId, (Vector3)coordinate);
         trianglesBuffer.SetCounterValue(0);
@@ -161,5 +174,23 @@ public class ChunkManager : MonoBehaviour
         int trianglesCount = trianglesCounts[0];
         trianglesBuffer.GetData(triangles, 0, 0, trianglesCount);
         chunk.Regenerate(coordinate, noiseValuesBuffer, triangles, trianglesCount);
+    }
+
+    private IEnumerator HandleMouseButtons()
+    {
+        WaitForSeconds waitForSeconds = new(0.1f);
+        while (true)
+        {
+            yield return waitForSeconds;
+            if (shouldDig != shouldFill)
+            {
+                if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit, axisSize))
+                {
+                    print(hit.point);
+                }
+            }
+            shouldDig = false;
+            shouldFill = false;
+        }
     }
 }
