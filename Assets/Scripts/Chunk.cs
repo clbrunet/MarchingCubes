@@ -1,18 +1,18 @@
-using System;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Rendering;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class Chunk : MonoBehaviour
 {
-    private MeshFilter meshFilter;
     private ChunkManager manager;
+    private MeshFilter meshFilter;
+    private MeshCollider meshCollider;
     private float[,,] noiseValues;
 
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
+        meshCollider = GetComponent<MeshCollider>();
         manager = ChunkManager.Instance;
         Assert.IsNotNull(manager);
         noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
@@ -24,7 +24,7 @@ public class Chunk : MonoBehaviour
     {
         if (meshFilter.mesh != null)
         {
-            meshFilter.mesh.Clear();
+            meshFilter.sharedMesh.Clear();
         }
         transform.position = (Vector3)coordinate * manager.axisSize;
         noiseValuesBuffer.GetData(noiseValues);
@@ -47,6 +47,7 @@ public class Chunk : MonoBehaviour
             triangles = trianglesIndices,
         };
         mesh.RecalculateNormals();
-        meshFilter.mesh = mesh;
+        meshFilter.sharedMesh = mesh;
+        meshCollider.sharedMesh = mesh;
     }
 }
