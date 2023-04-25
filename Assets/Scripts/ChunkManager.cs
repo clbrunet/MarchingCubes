@@ -184,9 +184,11 @@ public class ChunkManager : MonoBehaviour
             yield return waitForSeconds;
             if (shouldDig != shouldFill)
             {
-                if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit, axisSize))
+                if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit))
                 {
-                    print(hit.point);
+                    var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    sphere.transform.localScale = Vector3.one / 5;
+                    sphere.transform.position = hit.point;
                 }
             }
             shouldDig = false;
