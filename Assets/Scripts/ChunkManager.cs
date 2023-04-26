@@ -199,8 +199,10 @@ public class ChunkManager : MonoBehaviour
 
     private void Edit(Vector3 center, float value)
     {
-        Vector3Int frontBottomLeft = Vector3Int.FloorToInt((center - editRadius * Vector3.one) / axisSize);
-        Vector3Int backTopRight = Vector3Int.CeilToInt((center + editRadius * Vector3.one) / axisSize);
+        Vector3 centerOffset = new Vector3(editRadius, editRadius, editRadius)
+            + (axisSize / axisSegmentCount) * Vector3.one;
+        Vector3Int frontBottomLeft = Vector3Int.FloorToInt((center - centerOffset) / axisSize);
+        Vector3Int backTopRight = Vector3Int.CeilToInt((center + centerOffset) / axisSize);
         if (!chunks.TryGetValue(frontBottomLeft, out _)
             || !chunks.TryGetValue(backTopRight, out _))
         {
