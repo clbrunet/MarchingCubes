@@ -22,12 +22,17 @@ public class Chunk : MonoBehaviour
     public void Regenerate(Vector3Int coordinate, ComputeBuffer noiseValuesBuffer, ChunkTriangle[] triangles,
         int trianglesCount)
     {
+        transform.position = (Vector3)coordinate * manager.axisSize;
+        noiseValuesBuffer.GetData(noiseValues);
+        RegenerateMesh(triangles, trianglesCount);
+    }
+
+    public void RegenerateMesh(ChunkTriangle[] triangles, int trianglesCount)
+    {
         if (meshFilter.mesh != null)
         {
             meshFilter.sharedMesh.Clear();
         }
-        transform.position = (Vector3)coordinate * manager.axisSize;
-        noiseValuesBuffer.GetData(noiseValues);
         Vector3[] vertices = new Vector3[trianglesCount * 3];
         int[] trianglesIndices = new int[trianglesCount * 3];
         int i = 0;
@@ -49,5 +54,33 @@ public class Chunk : MonoBehaviour
         mesh.RecalculateNormals();
         meshFilter.sharedMesh = mesh;
         meshCollider.sharedMesh = mesh;
+    }
+
+    public bool Edit(Vector3 localCenter, float value, ComputeBuffer noiseValuesBuffer)
+    {
+        Vector3Int frontBottomLeft = Vector3Int.FloorToInt(localCenter - manager.editRadius * Vector3.one);
+        Vector3Int backTopRight = Vector3Int.CeilToInt(localCenter + manager.editRadius * Vector3.one);
+        if (frontBottomLeft.x > manager.axisSegmentCount || frontBottomLeft.y > manager.axisSegmentCount
+            || frontBottomLeft.z > manager.axisSegmentCount || backTopRight.x < 0 || backTopRight.y < 0
+            || backTopRight.z < 0)
+        {
+            return false;
+        }
+        frontBottomLeft.Clamp(Vector3Int.zero, new Vector3Int((int)manager.axisSegmentCount,
+            (int)manager.axisSegmentCount, (int)manager.axisSegmentCount));
+        backTopRight.Clamp(Vector3Int.zero, new Vector3Int((int)manager.axisSegmentCount,
+            (int)manager.axisSegmentCount, (int)manager.axisSegmentCount));
+        for (int z = frontBottomLeft.z; z <= backTopRight.z; z++)
+        {
+            for (int y = frontBottomLeft.y; y <= backTopRight.y; y++)
+            {
+                for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
+                {
+                    noiseValues[z, y, x] = value;
+                }
+            }
+        }
+        noiseValuesBuffer.SetData(noiseValues);
+        return true;
     }
 }

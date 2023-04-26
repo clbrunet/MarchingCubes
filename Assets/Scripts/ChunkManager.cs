@@ -52,6 +52,8 @@ public class ChunkManager : MonoBehaviour
 
     private bool shouldDig = false;
     private bool shouldFill = false;
+    [HideInInspector]
+    public float editRadius;
 
     private void Awake()
     {
@@ -67,6 +69,7 @@ public class ChunkManager : MonoBehaviour
     private void Start()
     {
         chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
+        editRadius = axisSize / 8f;
         chunkComputeShader.SetInt("_AxisSegmentCount", (int)axisSegmentCount);
         chunkComputeShader.SetFloat("_NoiseScale", noiseScale);
         chunkComputeShader.SetFloat("_AxisSize", axisSize);
@@ -119,7 +122,7 @@ public class ChunkManager : MonoBehaviour
     {
         chunksToRemove.UnionWith(chunks.Keys);
         chunksToAdd.Clear();
-        Vector3Int cameraChunkCoordinate = Vector3Int.RoundToInt(viewer.position / axisSize);
+        Vector3Int cameraChunkCoordinate = Vector3Int.FloorToInt(viewer.position / axisSize);
         int radius = chunkViewDistance - 1;
         Vector3Int frontBottomLeft = new(cameraChunkCoordinate.x - radius,
             cameraChunkCoordinate.y - radius, cameraChunkCoordinate.z - radius);
@@ -163,9 +166,9 @@ public class ChunkManager : MonoBehaviour
         chunkComputeShader.SetVector(coordinateId, (Vector3)coordinate);
         trianglesBuffer.SetCounterValue(0);
         int generateNoiseValuesThreadGroups = Mathf.CeilToInt((float)(axisSegmentCount + 1) / 4f);
+        int generateMeshDataThreadGroups = Mathf.CeilToInt((float)axisSegmentCount / 4f);
         chunkComputeShader.Dispatch(generateNoiseValuesKernel, generateNoiseValuesThreadGroups,
             generateNoiseValuesThreadGroups, generateNoiseValuesThreadGroups);
-        int generateMeshDataThreadGroups = Mathf.CeilToInt((float)axisSegmentCount / 4f);
         chunkComputeShader.Dispatch(generateMeshDataKernel, generateMeshDataThreadGroups,
             generateMeshDataThreadGroups, generateMeshDataThreadGroups);
 
@@ -186,13 +189,51 @@ public class ChunkManager : MonoBehaviour
             {
                 if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit))
                 {
-                    var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    sphere.transform.localScale = Vector3.one / 5;
-                    sphere.transform.position = hit.point;
+                    Edit(hit.point, shouldDig ? 0f : 1f);
                 }
             }
             shouldDig = false;
             shouldFill = false;
         }
+    }
+
+    private void Edit(Vector3 center, float value)
+    {
+        Vector3Int frontBottomLeft = Vector3Int.FloorToInt((center - editRadius * Vector3.one) / axisSize);
+        Vector3Int backTopRight = Vector3Int.CeilToInt((center + editRadius * Vector3.one) / axisSize);
+        if (!chunks.TryGetValue(frontBottomLeft, out _)
+            || !chunks.TryGetValue(backTopRight, out _))
+        {
+            return;
+        }
+        for (int z = frontBottomLeft.z; z <= backTopRight.z; z++)
+        {
+            for (int y = frontBottomLeft.y; y <= backTopRight.y; y++)
+            {
+                for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
+                {
+                    Vector3Int coordinate = new(x, y, z);
+                    Chunk chunk = chunks[coordinate];
+                    if (chunk.Edit(center - axisSize * (Vector3)coordinate, value, noiseValuesBuffer))
+                    {
+                        GenerateChunkMesh(chunk);
+                    }
+                }
+            }
+        }
+    }
+
+    private void GenerateChunkMesh(Chunk chunk)
+    {
+        trianglesBuffer.SetCounterValue(0);
+        int generateMeshDataThreadGroups = Mathf.CeilToInt((float)axisSegmentCount / 4f);
+        chunkComputeShader.Dispatch(generateMeshDataKernel, generateMeshDataThreadGroups,
+            generateMeshDataThreadGroups, generateMeshDataThreadGroups);
+
+        ComputeBuffer.CopyCount(trianglesBuffer, trianglesCountBuffer, 0);
+        trianglesCountBuffer.GetData(trianglesCounts);
+        int trianglesCount = trianglesCounts[0];
+        trianglesBuffer.GetData(triangles, 0, 0, trianglesCount);
+        chunk.RegenerateMesh(triangles, trianglesCount);
     }
 }
