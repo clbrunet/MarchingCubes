@@ -11,9 +11,14 @@ float3 _Coordinate;
 
 RWStructuredBuffer<float> _NoiseValues;
 
+uint GetNoiseIndex(uint3 id)
+{
+    return id.z * pow(_AxisSegmentCount + 1, 2) + id.y * (_AxisSegmentCount + 1) + id.x;
+}
+
 void GenerateNoiseValue(uint3 id)
 {
-    uint index = id.z * pow(_AxisSegmentCount + 1, 2) + id.y * (_AxisSegmentCount + 1) + id.x;
+    uint index = GetNoiseIndex(id);
     float3 pointCoordinate = _Coordinate + (float3) id / (float) _AxisSegmentCount;
     float3 noiseCoordinate = pointCoordinate * _NoiseScale;
     _NoiseValues[index] = SimplexNoise(noiseCoordinate) * 0.5 + 0.5;
@@ -46,8 +51,13 @@ float3 GetVertex(uint triangleEdge, uint3 frontBottomLeft)
 {
     uint3 cornerA = CORNERS[EDGE_TO_CORNER_A[triangleEdge]];
     uint3 cornerB = CORNERS[EDGE_TO_CORNER_B[triangleEdge]];
+    float valueA = _NoiseValues[GetNoiseIndex(frontBottomLeft + cornerA)];
+    float valueB = _NoiseValues[GetNoiseIndex(frontBottomLeft + cornerB)];
+    float differenceAB = abs(valueA - valueB);
+    float differenceAIsurfaceThreshold = abs(valueA - _IsosurfaceThreshold);
+    float factorB = differenceAIsurfaceThreshold / differenceAB;
     float3 vertex = _AxisSize / (float) _AxisSegmentCount
-        * ((float3) (cornerA + cornerB) / 2.0 + (float3) frontBottomLeft);
+        * ((float3) frontBottomLeft + ((1 - factorB) * (float3) cornerA + factorB * (float3) cornerB));
     return vertex;
 }
 
@@ -58,7 +68,7 @@ void GenerateMeshDataCube(uint3 frontBottomLeft)
     for (int j = 0; j < 8; j++)
     {
         uint3 corner = frontBottomLeft + CORNERS[j];
-        uint index = corner.z * pow(_AxisSegmentCount + 1, 2) + corner.y * (_AxisSegmentCount + 1) + corner.x;
+        uint index = GetNoiseIndex(corner);
         if (_NoiseValues[index] >= _IsosurfaceThreshold)
         {
             lookupCaseIndex |= i;
