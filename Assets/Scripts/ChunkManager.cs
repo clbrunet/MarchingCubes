@@ -69,7 +69,7 @@ public class ChunkManager : MonoBehaviour
     private void Start()
     {
         chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
-        editRadius = axisSize / 8f;
+        editRadius = axisSize / 4f;
         chunkComputeShader.SetInt("_AxisSegmentCount", (int)axisSegmentCount);
         chunkComputeShader.SetFloat("_NoiseScale", noiseScale);
         chunkComputeShader.SetFloat("_AxisSize", axisSize);

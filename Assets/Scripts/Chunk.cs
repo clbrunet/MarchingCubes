@@ -76,7 +76,11 @@ public class Chunk : MonoBehaviour
             {
                 for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
                 {
-                    noiseValues[z, y, x] = value;
+                    float distance = Vector3.Distance(localCenter, new Vector3(x, y, z));
+                    if (distance <= manager.editRadius)
+                    {
+                        noiseValues[z, y, x] = value;
+                    }
                 }
             }
         }
