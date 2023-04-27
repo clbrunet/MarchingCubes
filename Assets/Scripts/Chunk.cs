@@ -58,8 +58,10 @@ public class Chunk : MonoBehaviour
 
     public bool Edit(Vector3 localCenter, float value, ComputeBuffer noiseValuesBuffer)
     {
-        Vector3Int frontBottomLeft = Vector3Int.FloorToInt(localCenter - manager.editRadius * Vector3.one);
-        Vector3Int backTopRight = Vector3Int.CeilToInt(localCenter + manager.editRadius * Vector3.one);
+        Vector3Int frontBottomLeft = Vector3Int.FloorToInt((localCenter - manager.editRadius * Vector3.one)
+            / (manager.axisSize / manager.axisSegmentCount));
+        Vector3Int backTopRight = Vector3Int.CeilToInt((localCenter + manager.editRadius * Vector3.one)
+            / (manager.axisSize / manager.axisSegmentCount));
         if (frontBottomLeft.x > manager.axisSegmentCount || frontBottomLeft.y > manager.axisSegmentCount
             || frontBottomLeft.z > manager.axisSegmentCount || backTopRight.x < 0 || backTopRight.y < 0
             || backTopRight.z < 0)
@@ -76,7 +78,8 @@ public class Chunk : MonoBehaviour
             {
                 for (int x = frontBottomLeft.x; x <= backTopRight.x; x++)
                 {
-                    float distance = Vector3.Distance(localCenter, new Vector3(x, y, z));
+                    float distance = Vector3.Distance(localCenter,
+                        new Vector3(x, y, z) * (manager.axisSize / manager.axisSegmentCount));
                     if (distance <= manager.editRadius)
                     {
                         noiseValues[z, y, x] = value;
