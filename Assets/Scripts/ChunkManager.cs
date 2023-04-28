@@ -50,10 +50,9 @@ public class ChunkManager : MonoBehaviour
     private readonly HashSet<Vector3Int> chunksToAdd = new();
     private readonly HashSet<Vector3Int> chunksToRemove = new();
 
-    private bool shouldDig = false;
-    private bool shouldFill = false;
     [HideInInspector]
     public float editRadius;
+    private const float EDIT_SPEED = 2f;
 
     private void Awake()
     {
@@ -90,7 +89,6 @@ public class ChunkManager : MonoBehaviour
             chunks.Add(chunkToAdd, chunk);
         }
         chunksToAdd.Clear();
-        StartCoroutine(HandleMouseButtons());
     }
 
     private void OnDestroy()
@@ -108,13 +106,17 @@ public class ChunkManager : MonoBehaviour
             UpdateChunksToAddAndToRemove();
         }
         RecycleChunks();
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0) != Input.GetMouseButton(1))
         {
-            shouldDig = true;
-        }
-        if (Input.GetMouseButton(1))
-        {
-            shouldFill = true;
+            if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit))
+            {
+                float change = EDIT_SPEED * Time.deltaTime;
+                if (Input.GetMouseButton(0))
+                {
+                    change = -change;
+                }
+                Edit(hit.point, change);
+            }
         }
     }
 
@@ -179,25 +181,7 @@ public class ChunkManager : MonoBehaviour
         chunk.Regenerate(coordinate, noiseValuesBuffer, triangles, trianglesCount);
     }
 
-    private IEnumerator HandleMouseButtons()
-    {
-        WaitForSeconds waitForSeconds = new(0.1f);
-        while (true)
-        {
-            yield return waitForSeconds;
-            if (shouldDig != shouldFill)
-            {
-                if (Physics.Raycast(viewer.position, viewer.forward, out RaycastHit hit))
-                {
-                    Edit(hit.point, shouldDig ? 0f : 1f);
-                }
-            }
-            shouldDig = false;
-            shouldFill = false;
-        }
-    }
-
-    private void Edit(Vector3 center, float value)
+    private void Edit(Vector3 center, float change)
     {
         Vector3 centerOffset = new Vector3(editRadius, editRadius, editRadius)
             + (axisSize / axisSegmentCount) * Vector3.one;
@@ -216,7 +200,7 @@ public class ChunkManager : MonoBehaviour
                 {
                     Vector3Int coordinate = new(x, y, z);
                     Chunk chunk = chunks[coordinate];
-                    if (chunk.Edit(center - axisSize * (Vector3)coordinate, value, noiseValuesBuffer))
+                    if (chunk.Edit(center - axisSize * (Vector3)coordinate, change, noiseValuesBuffer))
                     {
                         GenerateChunkMesh(chunk);
                     }

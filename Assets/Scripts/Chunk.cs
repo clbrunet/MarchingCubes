@@ -56,7 +56,7 @@ public class Chunk : MonoBehaviour
         meshCollider.sharedMesh = mesh;
     }
 
-    public bool Edit(Vector3 localCenter, float value, ComputeBuffer noiseValuesBuffer)
+    public bool Edit(Vector3 localCenter, float change, ComputeBuffer noiseValuesBuffer)
     {
         Vector3Int frontBottomLeft = Vector3Int.FloorToInt((localCenter - manager.editRadius * Vector3.one)
             / (manager.axisSize / manager.axisSegmentCount));
@@ -82,7 +82,7 @@ public class Chunk : MonoBehaviour
                         new Vector3(x, y, z) * (manager.axisSize / manager.axisSegmentCount));
                     if (distance <= manager.editRadius)
                     {
-                        noiseValues[z, y, x] = value;
+                        noiseValues[z, y, x] = Mathf.Clamp01(noiseValues[z, y, x] + change);
                     }
                 }
             }
