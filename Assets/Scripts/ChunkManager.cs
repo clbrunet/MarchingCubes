@@ -16,20 +16,20 @@ public class ChunkManager : MonoBehaviour
     public static ChunkManager Instance { get; private set; }
 
     [SerializeField, Range(1, 12)]
-    private int chunkViewDistance = 4;
+    private int chunkViewDistance = 6;
     [SerializeField]
     private Transform chunksParent;
     [SerializeField]
     private Chunk chunkPrefab;
-    [SerializeField, Range(1, 100)]
-    private int maxChunksRecycledPerFrame = 20;
+    [SerializeField, Range(1, 32)]
+    private int maxChunksRecycledPerFrame = 8;
     [Range(0.00001f, 64f)]
     public float axisSize = 16f;
     [Range(4, 16)]
     public uint axisSegmentCount = 16;
     public float noiseScale = 1f;
     [Range(0.0f, 1.0f)]
-    public float isosurfaceThreshold = 0.7f;
+    public float isosurfaceThreshold = 0.5f;
 
     [SerializeField]
     private ComputeShader chunkComputeShader;
@@ -68,7 +68,6 @@ public class ChunkManager : MonoBehaviour
     private void Start()
     {
         chunksUpdateMinimumViewerMovementsSquared = axisSize * axisSize / 4f;
-        editRadius = axisSize / 4f;
         chunkComputeShader.SetInt("_AxisSegmentCount", (int)axisSegmentCount);
         chunkComputeShader.SetFloat("_NoiseScale", noiseScale);
         chunkComputeShader.SetFloat("_AxisSize", axisSize);
@@ -89,6 +88,9 @@ public class ChunkManager : MonoBehaviour
             chunks.Add(chunkToAdd, chunk);
         }
         chunksToAdd.Clear();
+        editRadius = axisSize / 2f;
+        Edit(viewer.position, -1.00001f + isosurfaceThreshold);
+        editRadius = axisSize / 4f;
     }
 
     private void OnDestroy()
