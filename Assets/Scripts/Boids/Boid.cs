@@ -3,9 +3,10 @@ using UnityEngine;
 
 public class Boid : MonoBehaviour
 {
-    private const float RAYS_OFFSET_ANGLE = 30f;
-    private const float VISION_RADIUS = 2.5f;
-    private const float SPEED = 1f;
+    private const float RAYS_OFFSET_ANGLE = 45f;
+    private const float VISION_RADIUS = 1.5f;
+    private const float WALL_RAYCAST_DISTANCE = 2.5f;
+    private const float SPEED = 2f;
     private const float ROTATE_SPEED = SPEED * 100f * Mathf.Deg2Rad;
 
     [SerializeField]
@@ -16,10 +17,6 @@ public class Boid : MonoBehaviour
         Quaternion.Euler(0f, RAYS_OFFSET_ANGLE, 0f) * Vector3.forward,
         Quaternion.Euler(RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
         Quaternion.Euler(-RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
-        Quaternion.Euler(0f, 2f * -RAYS_OFFSET_ANGLE, 0f) * Vector3.forward,
-        Quaternion.Euler(0f, 2f * RAYS_OFFSET_ANGLE, 0f) * Vector3.forward,
-        Quaternion.Euler(2f * RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
-        Quaternion.Euler(2f * -RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
     };
     private Vector3 targetForward;
 
@@ -30,20 +27,23 @@ public class Boid : MonoBehaviour
 
     private void Update()
     {
-        SeparateInShoal();
-        AlignInShoal();
+        Vector3 separation = GetSeparationVector();
+        Vector3 alignment = GetAlignmentVector();
+        Vector3 cohesion = GetCohesionVector();
+        targetForward = Vector3.RotateTowards(targetForward,
+            (targetForward + separation * 2 + alignment + cohesion) / 5, ROTATE_SPEED / 2 * Time.deltaTime, 0f);
         AvoidWalls();
         transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
         transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
     }
 
-    private void SeparateInShoal()
+    private Vector3 GetSeparationVector()
     {
         Vector3 sum = Vector3.zero;
         int count = 0;
         foreach (Boid boid in BoidsManager.Instance.boids)
         {
-            if (Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS / 4)
+            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS / 2)
             {
                 continue;
             }
@@ -52,19 +52,19 @@ public class Boid : MonoBehaviour
         }
         if (count == 0)
         {
-            return;
+            return Vector3.zero;
         }
         Vector3 position = sum / count;
-        targetForward = (-(position - transform.position) + targetForward) / 2;
+        return (-(position - transform.position)).normalized;
     }
 
-    private void AlignInShoal()
+    private Vector3 GetAlignmentVector()
     {
         Vector3 sum = Vector3.zero;
         int count = 0;
         foreach (Boid boid in BoidsManager.Instance.boids)
         {
-            if (Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
+            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
             {
                 continue;
             }
@@ -73,20 +73,41 @@ public class Boid : MonoBehaviour
         }
         if (count == 0)
         {
-            return;
+            return Vector3.zero;
         }
-        targetForward = (targetForward + sum / count) / 2;
+        return (sum / count).normalized;
+    }
+
+    private Vector3 GetCohesionVector()
+    {
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (Boid boid in BoidsManager.Instance.boids)
+        {
+            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
+            {
+                continue;
+            }
+            sum += boid.transform.position;
+            count++;
+        }
+        if (count == 0)
+        {
+            return Vector3.zero;
+        }
+        Vector3 position = sum / count;
+        return (position - transform.position).normalized;
     }
 
     private void AvoidWalls()
     {
-        if (Physics.Raycast(transform.position, targetForward, VISION_RADIUS, raycastLayer))
+        if (Physics.Raycast(transform.position, targetForward, WALL_RAYCAST_DISTANCE, raycastLayer))
         {
             List<Vector3> possibleDirections = new();
             foreach (Vector3 rayDirection in raysDirections)
             {
                 Vector3 direction = transform.rotation * rayDirection;
-                if (!Physics.Raycast(transform.position, direction, VISION_RADIUS, raycastLayer))
+                if (!Physics.Raycast(transform.position, direction, WALL_RAYCAST_DISTANCE, raycastLayer))
                 {
                     possibleDirections.Add(direction);
                 }

@@ -9,7 +9,7 @@ public class BoidsManager : MonoBehaviour
     private Boid boidPrefab;
 
     [HideInInspector]
-    public readonly Boid[] boids = new Boid[10];
+    public readonly Boid[] boids = new Boid[100];
 
     private void Awake()
     {
@@ -21,7 +21,8 @@ public class BoidsManager : MonoBehaviour
     {
         for(int i = 0; i < boids.Length; i++)
         {
-            boids[i] = Instantiate(boidPrefab, Vector3.zero, Random.rotation);
+            boids[i] = Instantiate(boidPrefab,
+                new Vector3(Random.Range(-5f, 5f), Random.Range(-5f, 5f), Random.Range(-5f, 5f)), Random.rotation);
         }
     }
 }
