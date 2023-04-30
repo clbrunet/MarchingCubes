@@ -30,10 +30,32 @@ public class Boid : MonoBehaviour
 
     private void Update()
     {
+        SeparateInShoal();
         AlignInShoal();
         AvoidWalls();
         transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
         transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
+    }
+
+    private void SeparateInShoal()
+    {
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (Boid boid in BoidsManager.Instance.boids)
+        {
+            if (Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS / 4)
+            {
+                continue;
+            }
+            sum += boid.transform.position;
+            count++;
+        }
+        if (count == 0)
+        {
+            return;
+        }
+        Vector3 position = sum / count;
+        targetForward = (-(position - transform.position) + targetForward) / 2;
     }
 
     private void AlignInShoal()
@@ -48,6 +70,10 @@ public class Boid : MonoBehaviour
             }
             sum += boid.targetForward;
             count++;
+        }
+        if (count == 0)
+        {
+            return;
         }
         targetForward = (targetForward + sum / count) / 2;
     }
