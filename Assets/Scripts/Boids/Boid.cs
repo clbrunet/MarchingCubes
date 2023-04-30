@@ -4,7 +4,7 @@ using UnityEngine;
 public class Boid : MonoBehaviour
 {
     private const float RAYS_OFFSET_ANGLE = 30f;
-    private const float RAYCAST_DISTANCE = 2.5f;
+    private const float VISION_RADIUS = 2.5f;
     private const float SPEED = 1f;
     private const float ROTATE_SPEED = SPEED * 100f * Mathf.Deg2Rad;
 
@@ -30,18 +30,37 @@ public class Boid : MonoBehaviour
 
     private void Update()
     {
-        if (Mathf.Abs(transform.position.x) > 5f || Mathf.Abs(transform.position.y) > 2.5f
-            || Mathf.Abs(transform.position.z) > 5f)
+        AlignInShoal();
+        AvoidWalls();
+        transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
+        transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
+    }
+
+    private void AlignInShoal()
+    {
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (Boid boid in BoidsManager.Instance.boids)
         {
-            Debug.LogError(name + " en dehors : " + transform.position);
+            if (Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
+            {
+                continue;
+            }
+            sum += boid.targetForward;
+            count++;
         }
-        if (Physics.Raycast(transform.position, targetForward, RAYCAST_DISTANCE, raycastLayer))
+        targetForward = (targetForward + sum / count) / 2;
+    }
+
+    private void AvoidWalls()
+    {
+        if (Physics.Raycast(transform.position, targetForward, VISION_RADIUS, raycastLayer))
         {
             List<Vector3> possibleDirections = new();
             foreach (Vector3 rayDirection in raysDirections)
             {
                 Vector3 direction = transform.rotation * rayDirection;
-                if (!Physics.Raycast(transform.position, direction, RAYCAST_DISTANCE, raycastLayer))
+                if (!Physics.Raycast(transform.position, direction, VISION_RADIUS, raycastLayer))
                 {
                     possibleDirections.Add(direction);
                 }
@@ -55,23 +74,5 @@ public class Boid : MonoBehaviour
                 targetForward = possibleDirections[Random.Range(0, possibleDirections.Count)];
             }
         }
-        transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
-        transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
-    }
-
-    private void OnDrawGizmos()
-    {
-        foreach (Vector3 rayDirection in raysDirections)
-        {
-            Vector3 direction = transform.rotation * rayDirection;
-            Gizmos.color = Color.green;
-            if (Physics.Raycast(transform.position, direction, RAYCAST_DISTANCE, raycastLayer))
-            {
-                Gizmos.color = Color.red;
-            }
-            Gizmos.DrawLine(transform.position, transform.position + RAYCAST_DISTANCE * direction);
-        }
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position, transform.position + RAYCAST_DISTANCE / 2 * targetForward);
     }
 }
