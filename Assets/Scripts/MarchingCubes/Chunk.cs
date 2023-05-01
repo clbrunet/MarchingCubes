@@ -25,6 +25,29 @@ public class Chunk : MonoBehaviour
         transform.position = (Vector3)coordinate * manager.axisSize;
         noiseValuesBuffer.GetData(noiseValues);
         RegenerateMesh(triangles, trianglesCount);
+        GenerateBoids(coordinate);
+    }
+
+    public void GenerateBoids(Vector3 coordinate)
+    {
+        for (int z = 0; z < noiseValues.GetLength(0); z++)
+        {
+            for (int y = 0; y < noiseValues.GetLength(1); y++)
+            {
+                for (int x = 0; x < noiseValues.GetLength(2); x++)
+                {
+                    if (noiseValues[z, y, x] <= BoidsManager.Instance.boidThreshold)
+                    {
+                        Vector3 position = coordinate + new Vector3(x, y, z) * (manager.axisSize / manager.axisSegmentCount);
+                        for (int i = 0; i < BoidsManager.Instance.maxBoidsPerChunk; i++)
+                        {
+                            BoidsManager.Instance.AddBoid(position);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     public void RegenerateMesh(ChunkTriangle[] triangles, int trianglesCount)

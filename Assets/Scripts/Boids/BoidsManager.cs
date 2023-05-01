@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -6,10 +7,14 @@ public class BoidsManager : MonoBehaviour
     public static BoidsManager Instance { get; private set; }
 
     [SerializeField]
+    private Transform boidsParent;
+    [SerializeField]
     private Boid boidPrefab;
+    public float boidThreshold = 0.1f;
+    public int maxBoidsPerChunk = 2;
 
     [HideInInspector]
-    public readonly Boid[] boids = new Boid[100];
+    public readonly List<Boid> boids = new();
 
     private void Awake()
     {
@@ -17,12 +22,8 @@ public class BoidsManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    public void AddBoid(Vector3 position)
     {
-        for(int i = 0; i < boids.Length; i++)
-        {
-            boids[i] = Instantiate(boidPrefab,
-                new Vector3(Random.Range(-5f, 5f), Random.Range(-5f, 5f), Random.Range(-5f, 5f)), Random.rotation);
-        }
+        boids.Add(Instantiate(boidPrefab, position, Random.rotation, boidsParent));
     }
 }

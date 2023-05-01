@@ -27,76 +27,54 @@ public class Boid : MonoBehaviour
 
     private void Update()
     {
-        Vector3 separation = GetSeparationVector();
-        Vector3 alignment = GetAlignmentVector();
-        Vector3 cohesion = GetCohesionVector();
-        targetForward = Vector3.RotateTowards(targetForward,
-            (targetForward + separation * 2 + alignment + cohesion) / 5, ROTATE_SPEED / 2 * Time.deltaTime, 0f);
+        BoidAI();
         AvoidWalls();
         transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
         transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
     }
 
-    private Vector3 GetSeparationVector()
+    private void BoidAI()
     {
-        Vector3 sum = Vector3.zero;
-        int count = 0;
-        foreach (Boid boid in BoidsManager.Instance.boids)
-        {
-            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS / 2)
-            {
-                continue;
-            }
-            sum += boid.transform.position;
-            count++;
-        }
-        if (count == 0)
-        {
-            return Vector3.zero;
-        }
-        Vector3 position = sum / count;
-        return (-(position - transform.position)).normalized;
-    }
-
-    private Vector3 GetAlignmentVector()
-    {
-        Vector3 sum = Vector3.zero;
-        int count = 0;
+        Vector3 separationPositionsSum = Vector3.zero;
+        int separationPositionsCount = 0;
+        Vector3 alignmentTargetForwardsSum = Vector3.zero;
+        int alignmentTargetForwardsCount = 0;
+        Vector3 cohesionPositionsSum = Vector3.zero;
+        int cohesionPositionsCount = 0;
         foreach (Boid boid in BoidsManager.Instance.boids)
         {
             if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
             {
                 continue;
             }
-            sum += boid.targetForward;
-            count++;
-        }
-        if (count == 0)
-        {
-            return Vector3.zero;
-        }
-        return (sum / count).normalized;
-    }
-
-    private Vector3 GetCohesionVector()
-    {
-        Vector3 sum = Vector3.zero;
-        int count = 0;
-        foreach (Boid boid in BoidsManager.Instance.boids)
-        {
-            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
+            alignmentTargetForwardsSum += boid.targetForward;
+            alignmentTargetForwardsCount++;
+            cohesionPositionsSum += boid.transform.position;
+            cohesionPositionsCount++;
+            if (Vector3.Distance(transform.position, boid.transform.position) < VISION_RADIUS / 2)
             {
-                continue;
+                separationPositionsSum += boid.transform.position;
+                separationPositionsCount++;
             }
-            sum += boid.transform.position;
-            count++;
         }
-        if (count == 0)
+        targetForward = targetForward.normalized;
+        Vector3 separation = targetForward;
+        Vector3 alignment = targetForward;
+        Vector3 cohesion = targetForward;
+        if (separationPositionsCount != 0)
         {
-            return Vector3.zero;
+            separation = (transform.position - (separationPositionsSum / separationPositionsCount)).normalized;
         }
-        Vector3 position = sum / count;
-        return (position - transform.position).normalized;
+        if (alignmentTargetForwardsCount != 0)
+        {
+            alignment = (alignmentTargetForwardsSum / alignmentTargetForwardsCount).normalized;
+        }
+        if (cohesionPositionsCount != 0)
+        {
+            cohesion = ((cohesionPositionsSum / cohesionPositionsCount) - transform.position).normalized;
+        }
+        targetForward = Vector3.RotateTowards(targetForward,
+            (targetForward + separation * 2 + alignment + cohesion) / 5, ROTATE_SPEED / 2 * Time.deltaTime, 0f);
     }
 
     private void AvoidWalls()
