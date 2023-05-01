@@ -258,8 +258,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc7cc5f15b0721745980ec340e118d8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  boidsParent: {fileID: 0}
   boidPrefab: {fileID: 965511272092106580, guid: 3966b831f101e8b4c85aecb3642f3a14,
     type: 3}
+  boidThreshold: 0.1
+  maxBoidsPerChunk: 2
 --- !u!4 &608905127
 Transform:
   m_ObjectHideFlags: 0

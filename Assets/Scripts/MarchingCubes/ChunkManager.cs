@@ -11,6 +11,7 @@ public struct ChunkTriangle
     public Vector3 vertexC;
 };
 
+[RequireComponent(typeof(MeshCollider))]
 public class ChunkManager : MonoBehaviour
 {
     public static ChunkManager Instance { get; private set; }
@@ -43,6 +44,7 @@ public class ChunkManager : MonoBehaviour
     private readonly int[] trianglesCounts = new int[1];
     private ChunkTriangle[] triangles;
 
+    private MeshCollider meshCollider;
     private Transform viewer;
     private float chunksUpdateMinimumViewerMovementsSquared;
     private Vector3 lastChunksUpdateViewerPosition;
@@ -62,6 +64,7 @@ public class ChunkManager : MonoBehaviour
         generateNoiseValuesKernel = chunkComputeShader.FindKernel("GenerateNoiseValues");
         generateMeshDataKernel = chunkComputeShader.FindKernel("GenerateMeshData");
 
+        meshCollider = GetComponent<MeshCollider>();
         viewer = Camera.main.transform;
     }
 
@@ -148,6 +151,52 @@ public class ChunkManager : MonoBehaviour
             }
         }
         lastChunksUpdateViewerPosition = viewer.position;
+        UpdateBorder(frontBottomLeft, backTopRight);
+    }
+
+    private void UpdateBorder(Vector3Int frontBottomLeftCoordinate, Vector3Int backTopRightCoordinate)
+    {
+        Vector3 frontBottomLeft = axisSize * (Vector3)frontBottomLeftCoordinate;
+        Vector3 backTopRight = axisSize * (Vector3)(backTopRightCoordinate + Vector3Int.one);
+        Mesh collisionMesh = new()
+        {
+            vertices = new[]
+            {
+                // bottom
+                new Vector3(frontBottomLeft.x, frontBottomLeft.y, frontBottomLeft.z),
+                new Vector3(frontBottomLeft.x, frontBottomLeft.y, backTopRight.z),
+                new Vector3(backTopRight.x,    frontBottomLeft.y, backTopRight.z),
+                new Vector3(backTopRight.x,    frontBottomLeft.y, frontBottomLeft.z),
+                // top
+                new Vector3(frontBottomLeft.x, backTopRight.y, frontBottomLeft.z),
+                new Vector3(frontBottomLeft.x, backTopRight.y, backTopRight.z),
+                new Vector3(backTopRight.x,    backTopRight.y, backTopRight.z),
+                new Vector3(backTopRight.x,    backTopRight.y, frontBottomLeft.z),
+            },
+            triangles = new[]
+            {
+                // bottom
+                0, 1, 2,
+                0, 2, 3,
+                // top
+                6, 5, 4,
+                6, 4, 7,
+                // front
+                0, 3, 4,
+                7, 4, 3,
+                // back
+                1, 5, 2,
+                2, 5, 6,
+                // left
+                0, 4, 1,
+                1, 4, 5,
+                // right
+                2, 6, 7,
+                2, 7, 3,
+            },
+        };
+        collisionMesh.RecalculateNormals();
+        meshCollider.sharedMesh = collisionMesh;
     }
 
     private void RecycleChunks()
