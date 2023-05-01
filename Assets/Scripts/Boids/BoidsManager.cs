@@ -22,8 +22,33 @@ public class BoidsManager : MonoBehaviour
         Instance = this;
     }
 
+    private void Start()
+    {
+        ChunksManager.Instance.OnBorderUpdated += ChunksManager_OnBorderUpdated;
+    }
+
+    private void OnDestroy()
+    {
+        ChunksManager.Instance.OnBorderUpdated -= ChunksManager_OnBorderUpdated;
+    }
+
     public void AddBoid(Vector3 position)
     {
         boids.Add(Instantiate(boidPrefab, position, Random.rotation, boidsParent));
+    }
+
+    private void ChunksManager_OnBorderUpdated(Vector3 frontBottomLeft, Vector3 backTopRight)
+    {
+        boids.RemoveAll((Boid boid) =>
+        {
+            Vector3 position = boid.transform.position;
+            if (position.x <= frontBottomLeft.x || position.y <= frontBottomLeft.y || position.z <= frontBottomLeft.z
+            || position.x >= backTopRight.x || position.y >= backTopRight.y || position.z >= backTopRight.z)
+            {
+                Destroy(boid.gameObject);
+                return true;
+            }
+            return false;
+        });
     }
 }

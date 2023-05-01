@@ -4,7 +4,7 @@ using UnityEngine.Assertions;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class Chunk : MonoBehaviour
 {
-    private ChunkManager manager;
+    private ChunksManager manager;
     private MeshFilter meshFilter;
     private MeshCollider meshCollider;
     private float[,,] noiseValues;
@@ -13,7 +13,7 @@ public class Chunk : MonoBehaviour
     {
         meshFilter = GetComponent<MeshFilter>();
         meshCollider = GetComponent<MeshCollider>();
-        manager = ChunkManager.Instance;
+        manager = ChunksManager.Instance;
         Assert.IsNotNull(manager);
         noiseValues = new float[manager.axisSegmentCount + 1, manager.axisSegmentCount + 1,
             manager.axisSegmentCount + 1];

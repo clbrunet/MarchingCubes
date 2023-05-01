@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +13,9 @@ public struct ChunkTriangle
 };
 
 [RequireComponent(typeof(MeshCollider))]
-public class ChunkManager : MonoBehaviour
+public class ChunksManager : MonoBehaviour
 {
-    public static ChunkManager Instance { get; private set; }
+    public static ChunksManager Instance { get; private set; }
 
     [SerializeField, Range(1, 12)]
     private int chunkViewDistance = 6;
@@ -45,6 +46,7 @@ public class ChunkManager : MonoBehaviour
     private ChunkTriangle[] triangles;
 
     private MeshCollider meshCollider;
+    public event Action<Vector3, Vector3> OnBorderUpdated;
     private Transform viewer;
     private float chunksUpdateMinimumViewerMovementsSquared;
     private Vector3 lastChunksUpdateViewerPosition;
@@ -197,6 +199,7 @@ public class ChunkManager : MonoBehaviour
         };
         collisionMesh.RecalculateNormals();
         meshCollider.sharedMesh = collisionMesh;
+        OnBorderUpdated?.Invoke(frontBottomLeft, backTopRight);
     }
 
     private void RecycleChunks()
