@@ -197,7 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e3d26e3d87c4e942bdd744ffc7b1bb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chunkViewDistance: 1
+  chunkViewDistance: 3
   chunksParent: {fileID: 662068842}
   chunkPrefab: {fileID: 6384766017849542809, guid: dff74f9d01c25c345819ac4d63936588,
     type: 3}

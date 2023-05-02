@@ -30,15 +30,16 @@ public class Chunk : MonoBehaviour
 
     public void GenerateBoids(Vector3 coordinate)
     {
-        for (int z = 0; z < noiseValues.GetLength(0); z++)
+        for (int z = 1; z < noiseValues.GetLength(0) - 1; z++)
         {
-            for (int y = 0; y < noiseValues.GetLength(1); y++)
+            for (int y = 1; y < noiseValues.GetLength(1) - 1; y++)
             {
-                for (int x = 0; x < noiseValues.GetLength(2); x++)
+                for (int x = 1; x < noiseValues.GetLength(2) - 1; x++)
                 {
                     if (noiseValues[z, y, x] <= BoidsManager.Instance.boidThreshold)
                     {
-                        Vector3 position = coordinate + new Vector3(x, y, z) * (manager.axisSize / manager.axisSegmentCount);
+                        Vector3 position = coordinate * manager.axisSize
+                            + new Vector3(x, y, z) * (manager.axisSize / manager.axisSegmentCount);
                         for (int i = 0; i < BoidsManager.Instance.maxBoidsPerChunk; i++)
                         {
                             BoidsManager.Instance.AddBoid(position);
