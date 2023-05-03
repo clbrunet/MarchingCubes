@@ -276,4 +276,9 @@ public class ChunksManager : MonoBehaviour
         trianglesBuffer.GetData(triangles, 0, 0, trianglesCount);
         chunk.RegenerateMesh(triangles, trianglesCount);
     }
+
+    public int GetChunksCount()
+    {
+        return (int)Mathf.Pow(chunkViewDistance + chunkViewDistance - 1, 3);
+    }
 }

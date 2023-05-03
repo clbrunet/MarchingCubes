@@ -1,0 +1,81 @@
+#pragma kernel BoidAI
+
+static const float VISION_RADIUS = 3.0;
+
+struct BoidInput
+{
+    float3 position;
+    float3 targetForward;
+};
+StructuredBuffer<BoidInput> _BoidsInputs;
+
+struct BoidOutput
+{
+    float3 targetForward;
+};
+RWStructuredBuffer<BoidOutput> _BoidsOutputs;
+
+uint _BoidsCount;
+
+[numthreads(64, 1, 1)]
+void BoidAI(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x > _BoidsCount)
+    {
+        return;
+    }
+    BoidInput boidInput = _BoidsInputs[id.x];
+    float3 alignmentTargetForwardsSum = float3(0.0, 0.0, 0.0);
+    float3 cohesionPositionsSum = float3(0.0, 0.0, 0.0);
+    int flockmatesCount = 0;
+    float3 separationPositionsSum = float3(0.0, 0.0, 0.0);
+    int closeFlockmatesCount = 0;
+    for (uint i = 0; i < _BoidsCount; i++)
+    {
+        if (i == id.x)
+        {
+            continue;
+        }
+        BoidInput current = _BoidsInputs[i];
+        float3 distanceVector = boidInput.position - current.position;
+        float squaredDistance = dot(distanceVector, distanceVector);
+        if (squaredDistance > VISION_RADIUS * VISION_RADIUS)
+        {
+            continue;
+        }
+        alignmentTargetForwardsSum += current.targetForward;
+        cohesionPositionsSum += current.position;
+        flockmatesCount++;
+        if (squaredDistance <= (VISION_RADIUS / 2.0) * (VISION_RADIUS / 2.0))
+        {
+            separationPositionsSum += current.position;
+            closeFlockmatesCount++;
+        }
+    }
+    float3 targetForward = normalize(boidInput.targetForward);
+    float3 separation = targetForward;
+    float3 alignment = targetForward;
+    float3 cohesion = targetForward;
+    if (flockmatesCount != 0)
+    {
+        float3 alignmentVector = alignmentTargetForwardsSum / (float) flockmatesCount;
+        if (any(alignmentVector != float3(0.0, 0.0, 0.0)))
+        {
+            alignment = normalize(alignmentVector);
+        }
+        float3 cohesionVector = cohesionPositionsSum / (float) flockmatesCount - boidInput.position;
+        if (any(cohesionVector != float3(0.0, 0.0, 0.0)))
+        {
+            cohesion = normalize(cohesionVector);
+        }
+    }
+    if (closeFlockmatesCount != 0)
+    {
+        float3 separationVector = boidInput.position - (separationPositionsSum / (float) closeFlockmatesCount);
+        if (any(separationVector != float3(0.0, 0.0, 0.0)))
+        {
+            separation = normalize(separationVector);
+        }
+    }
+    _BoidsOutputs[id.x].targetForward = (targetForward + separation * 2.0 + alignment + cohesion) / 5.0;
+}

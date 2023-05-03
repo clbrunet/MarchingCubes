@@ -4,7 +4,6 @@ using UnityEngine;
 public class Boid : MonoBehaviour
 {
     private const float RAYS_OFFSET_ANGLE = 45f;
-    private const float VISION_RADIUS = 1.5f;
     private const float WALL_RAYCAST_DISTANCE = 2.5f;
     private const float SPEED = 2f;
     private const float ROTATE_SPEED = SPEED * 100f * Mathf.Deg2Rad;
@@ -18,63 +17,19 @@ public class Boid : MonoBehaviour
         Quaternion.Euler(RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
         Quaternion.Euler(-RAYS_OFFSET_ANGLE, 0f, 0f) * Vector3.forward,
     };
-    private Vector3 targetForward;
+    public Vector3 targetForward;
 
-    private void Start()
+    private void Awake()
     {
         targetForward = transform.forward;
     }
 
-    private void Update()
+    public void UpdateBoid(Vector3 boidAITargetForward)
     {
-        BoidAI();
+        targetForward = Vector3.RotateTowards(targetForward, boidAITargetForward, ROTATE_SPEED / 4f * Time.deltaTime, 0f);
         AvoidWalls();
         transform.forward = Vector3.RotateTowards(transform.forward, targetForward, ROTATE_SPEED * Time.deltaTime, 0f);
         transform.Translate(SPEED * Time.deltaTime * Vector3.forward);
-    }
-
-    private void BoidAI()
-    {
-        Vector3 separationPositionsSum = Vector3.zero;
-        int separationPositionsCount = 0;
-        Vector3 alignmentTargetForwardsSum = Vector3.zero;
-        int alignmentTargetForwardsCount = 0;
-        Vector3 cohesionPositionsSum = Vector3.zero;
-        int cohesionPositionsCount = 0;
-        foreach (Boid boid in BoidsManager.Instance.boids)
-        {
-            if (boid == this || Vector3.Distance(transform.position, boid.transform.position) > VISION_RADIUS)
-            {
-                continue;
-            }
-            alignmentTargetForwardsSum += boid.targetForward;
-            alignmentTargetForwardsCount++;
-            cohesionPositionsSum += boid.transform.position;
-            cohesionPositionsCount++;
-            if (Vector3.Distance(transform.position, boid.transform.position) < VISION_RADIUS / 2)
-            {
-                separationPositionsSum += boid.transform.position;
-                separationPositionsCount++;
-            }
-        }
-        targetForward = targetForward.normalized;
-        Vector3 separation = targetForward;
-        Vector3 alignment = targetForward;
-        Vector3 cohesion = targetForward;
-        if (separationPositionsCount != 0)
-        {
-            separation = (transform.position - (separationPositionsSum / separationPositionsCount)).normalized;
-        }
-        if (alignmentTargetForwardsCount != 0)
-        {
-            alignment = (alignmentTargetForwardsSum / alignmentTargetForwardsCount).normalized;
-        }
-        if (cohesionPositionsCount != 0)
-        {
-            cohesion = ((cohesionPositionsSum / cohesionPositionsCount) - transform.position).normalized;
-        }
-        targetForward = Vector3.RotateTowards(targetForward,
-            (targetForward + separation * 2 + alignment + cohesion) / 5, ROTATE_SPEED / 2 * Time.deltaTime, 0f);
     }
 
     private void AvoidWalls()
