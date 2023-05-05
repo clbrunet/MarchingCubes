@@ -34,25 +34,24 @@ public class Boid : MonoBehaviour
 
     private void AvoidWalls()
     {
-        if (Physics.Raycast(transform.position, targetForward, WALL_RAYCAST_DISTANCE, raycastLayer))
+        if (!Physics.Raycast(transform.position, targetForward, WALL_RAYCAST_DISTANCE, raycastLayer))
         {
-            List<Vector3> possibleDirections = new();
-            foreach (Vector3 rayDirection in raysDirections)
+            return;
+        }
+        int index = Random.Range(0, raysDirections.Length);
+        for (int i = 0; i < raysDirections.Length; i++)
+        {
+            Vector3 direction = transform.rotation * raysDirections[index];
+            if (!Physics.Raycast(transform.position, direction, WALL_RAYCAST_DISTANCE, raycastLayer))
             {
-                Vector3 direction = transform.rotation * rayDirection;
-                if (!Physics.Raycast(transform.position, direction, WALL_RAYCAST_DISTANCE, raycastLayer))
-                {
-                    possibleDirections.Add(direction);
-                }
+                targetForward = direction;
             }
-            if (possibleDirections.Count == 0)
+            index++;
+            if (index >= raysDirections.Length)
             {
-                targetForward = -transform.forward;
-            }
-            else
-            {
-                targetForward = possibleDirections[Random.Range(0, possibleDirections.Count)];
+                index = 0;
             }
         }
+        targetForward = -transform.forward;
     }
 }

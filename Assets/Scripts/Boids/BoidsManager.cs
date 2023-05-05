@@ -16,6 +16,7 @@ public class BoidsManager : MonoBehaviour
 
     [HideInInspector]
     public readonly List<Boid> boids = new();
+    private bool firstUpdateAfterBoidsChange = true;
 
     private struct BoidInput
     {
@@ -54,6 +55,7 @@ public class BoidsManager : MonoBehaviour
         boidsOuputsBuffer = new ComputeBuffer(maxBoidsCount, sizeof(float) * 3);
         computeShader.SetBuffer(boidAIKernel, "_BoidsOutputs", boidsOuputsBuffer);
         ChunksManager.Instance.OnBorderUpdated += ChunksManager_OnBorderUpdated;
+        firstUpdateAfterBoidsChange = true;
     }
 
     private void OnDestroy()
@@ -69,19 +71,28 @@ public class BoidsManager : MonoBehaviour
         {
             return;
         }
-        for (int i = 0; i < boids.Count; i++)
+        if (firstUpdateAfterBoidsChange)
         {
-            boidsInputs[i].position = boids[i].transform.position;
-            boidsInputs[i].targetForward = boids[i].targetForward;
+            for (int i = 0; i < boids.Count; i++)
+            {
+                boidsInputs[i].position = boids[i].transform.position;
+                boidsInputs[i].targetForward = boids[i].targetForward;
+            }
+            boidsInputsBuffer.SetData(boidsInputs);
+            computeShader.SetInt(boidsCountId, boids.Count);
+            computeShader.Dispatch(boidAIKernel, Mathf.CeilToInt((float)boids.Count / 64f), 1, 1);
+            firstUpdateAfterBoidsChange = false;
         }
-        boidsInputsBuffer.SetData(boidsInputs);
-        computeShader.SetInt(boidsCountId, boids.Count);
-        computeShader.Dispatch(boidAIKernel, Mathf.CeilToInt((float)boids.Count / 64f), 1, 1);
         boidsOuputsBuffer.GetData(boidsOutputs);
         for (int i = 0; i < boids.Count; i++)
         {
-            boids[i].UpdateBoid(boidsOutputs[i].targetForward);
+            Boid boid = boids[i];
+            boid.UpdateBoid(boidsOutputs[i].targetForward);
+            boidsInputs[i].position = boid.transform.position;
+            boidsInputs[i].targetForward = boid.targetForward;
         }
+        boidsInputsBuffer.SetData(boidsInputs);
+        computeShader.Dispatch(boidAIKernel, Mathf.CeilToInt((float)boids.Count / 64f), 1, 1);
     }
 
     public void AddBoid(Vector3 position)
@@ -91,6 +102,7 @@ public class BoidsManager : MonoBehaviour
             return;
         }
         boids.Add(Instantiate(boidPrefab, position, Random.rotation, boidsParent));
+        firstUpdateAfterBoidsChange = true;
     }
 
     private void ChunksManager_OnBorderUpdated(Vector3 frontBottomLeft, Vector3 backTopRight)
@@ -106,5 +118,6 @@ public class BoidsManager : MonoBehaviour
             }
             return false;
         });
+        firstUpdateAfterBoidsChange = true;
     }
 }
